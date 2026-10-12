@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
@@ -65,6 +65,7 @@ function fmtDate(v: string | null) {
 }
 
 function SubscriptionPage() {
+  const navigate = useNavigate();
   const { societyId, loading: sidLoading } = useSocietyId();
   const { plan: effectivePlan, isLoading: planLoading } = useFeatureAccess();
   const { profile, user } = useAuth();
@@ -137,6 +138,8 @@ function SubscriptionPage() {
   }
 
   async function handleBuy(p: { id: string; name: string }) {
+    // Razorpay is temporarily locked; every plan purchase goes through checkout (UPI).
+    if (p.id) { navigate({ to: "/checkout/$planId", params: { planId: p.id } }); return; }
     setBusyId(p.id);
     try {
     const requestId = requestIds.current.get(p.id) ?? crypto.randomUUID();

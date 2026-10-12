@@ -122,6 +122,10 @@ export const createSaasSubscriptionOrder = createServerFn({ method: "POST" })
   .inputValidator((input) => purchaseSchema.parse(input))
   .handler(async ({ data, context }) => {
     await requirePlanManager(context.supabase, data.societyId);
+    // Razorpay is kept but can be locked by the Super Admin (manual UPI is used meanwhile).
+    const { data: methods } = await context.supabase.rpc("get_saas_payment_methods");
+    if ((methods as { razorpay_locked?: boolean } | null)?.razorpay_locked !== false)
+      throw new Error("Card payments are temporarily out of service. Please pay by UPI.");
     const { checkRateLimit } = await import("@/lib/rate-limit.server");
     await Promise.all([
       checkRateLimit({

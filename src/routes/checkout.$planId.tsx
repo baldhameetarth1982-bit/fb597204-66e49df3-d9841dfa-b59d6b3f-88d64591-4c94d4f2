@@ -4,7 +4,9 @@ import { userMessage } from "@/lib/user-error";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, ShieldAlert, CreditCard, ArrowLeft } from "lucide-react";
+import { Loader2, ShieldAlert, CreditCard, ArrowLeft, QrCode, Lock } from "lucide-react";
+import { getSaasPaymentMethods } from "@/lib/saas-upi-payment.functions";
+import { SaasUpiCheckout } from "@/components/payments/SaasUpiCheckout";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +38,11 @@ function CheckoutPage() {
   const { profile, user, hasRole } = useAuth();
   const canManagePlan = hasRole("society_admin") || hasRole("super_admin");
   const [live, setLive] = useState<boolean | null>(null);
+  const fetchMethods = useServerFn(getSaasPaymentMethods);
+  const methods = useQuery({ queryKey: ["saas-payment-methods"], queryFn: () => fetchMethods(), staleTime: 60_000 });
+  const razorpayLocked = methods.data?.razorpayLocked ?? true;
+  const upiOn = Boolean(methods.data?.upiEnabled && methods.data.upiVpa);
+  const [method, setMethod] = useState<"upi" | "razorpay">("upi");
   const [busy, setBusy] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const requestId = useRef(crypto.randomUUID());
@@ -45,7 +52,7 @@ function CheckoutPage() {
   const flatQuantity = qtyInput && Number.isInteger(qtyNum) && qtyNum >= 1 && qtyNum <= 300 ? qtyNum : undefined;
 
   useEffect(() => {
-    supabase.rpc("is_razorpay_live").then(({ data }) => setLive(Boolean(data)));
+    supabase.rpc("is_razorpay_live").then(({ data }) => setLive(Boolean(data)), () => setLive(false));
   }, []);
 
   const fetchQuotes = useServerFn(getSaasSubscriptionQuotes);
@@ -215,39 +222,67 @@ function CheckoutPage() {
                 </div>
               )}
 
-              {live === null ? (
+              {live === null || methods.isLoading ? (
                 <div className="py-6 grid place-items-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : live && plan && payable ? (
-                <>
-                  <Button
-                    onClick={() => setSummaryOpen(true)}
-                    disabled={busy}
-                    className="w-full min-h-[56px] rounded-xl"
-                  >
-                    Review & Pay securely
-                  </Button>
-                  <PaymentSecurityBadge />
-                </>
-              ) : (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
-                  <div className="flex items-start gap-3">
-                    <ShieldAlert className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="font-semibold">Payments are being finalised</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        We are completing our payment gateway verification. Checkout will go live
-                        shortly. For anything urgent, email{" "}
-                        <a href="mailto:sociohub710@gmail.com" className="underline">
-                          sociohub710@gmail.com
-                        </a>
-                        .
+              ) : plan && payable ? (
+                <div className="space-y-4">
+                  <p className="text-sm font-semibold">Choose how to pay</p>
+                  <div role="radiogroup" aria-label="Payment method" className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button" role="radio" aria-checked={method === "upi"}
+                      disabled={!upiOn}
+                      onClick={() => setMethod("upi")}
+                      className={`min-h-[72px] rounded-xl border-2 p-3 text-left transition-colors disabled:opacity-50 ${method === "upi" ? "border-primary bg-primary/5" : "border-border"}`}
+                    >
+                      <QrCode className="h-5 w-5 text-primary" />
+                      <p className="mt-1 text-sm font-semibold">UPI (scan QR)</p>
+                      <p className="text-xs text-muted-foreground">{upiOn ? "Any UPI app" : "Unavailable"}</p>
+                    </button>
+                    <button
+                      type="button" role="radio" aria-checked={method === "razorpay"}
+                      disabled={razorpayLocked || !live}
+                      aria-disabled={razorpayLocked || !live}
+                      onClick={() => setMethod("razorpay")}
+                      className={`relative min-h-[72px] rounded-xl border-2 p-3 text-left disabled:cursor-not-allowed disabled:opacity-60 ${method === "razorpay" ? "border-primary bg-primary/5" : "border-border"}`}
+                    >
+                      <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <CreditCard className="h-5 w-5 text-muted-foreground" />
+                      <p className="mt-1 text-sm font-semibold">Card / Netbanking</p>
+                      <p className="text-xs text-muted-foreground">{razorpayLocked || !live ? "Temporarily out of service" : "Via Razorpay"}</p>
+                    </button>
+                  </div>
+                  {method === "upi" && upiOn && profile?.society_id ? (
+                    <SaasUpiCheckout
+                      societyId={profile.society_id}
+                      planId={plan.id as "basic" | "pro" | "premium"}
+                      planName={plan.name}
+                      flatQuantity={flatQuantity}
+                      amountPaise={quote!.amount_paise ?? 0}
+                      basePaise={quote!.base_amount_paise}
+                      taxPaise={quote!.tax_amount_paise}
+                      taxPercent={quote!.tax_percent}
+                      upiVpa={methods.data!.upiVpa}
+                      payeeName={methods.data!.payeeName}
+                    />
+                  ) : method === "razorpay" && !razorpayLocked && live ? (
+                    <>
+                      <Button onClick={() => setSummaryOpen(true)} disabled={busy} className="w-full min-h-[56px] rounded-xl">
+                        Review & Pay securely
+                      </Button>
+                      <PaymentSecurityBadge />
+                    </>
+                  ) : (
+                    <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 text-sm">
+                      <p className="font-semibold">Online payment is temporarily out of service</p>
+                      <p className="mt-1 text-muted-foreground">
+                        For help, email <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a>.
                       </p>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               <p className="text-xs text-muted-foreground text-center">
                 By continuing you agree to our{" "}

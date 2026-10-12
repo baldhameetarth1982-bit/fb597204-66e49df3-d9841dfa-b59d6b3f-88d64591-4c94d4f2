@@ -87,6 +87,15 @@ function TermsPage() {
                 the chosen term. See our <Link to="/refund" className="underline">Refund Policy</Link> for
                 cancellation and refund terms.
               </p>
+              <p className="text-muted-foreground mt-2">
+                <strong>Direct UPI payment.</strong> While card checkout is unavailable, plans may be paid by UPI to
+                SociyoHub's UPI ID shown on the checkout screen. The QR already contains the exact total, including GST
+                and any offer. After paying, the admin submits the UPI transaction ID (UTR) and a screenshot. A plan is
+                activated only after SociyoHub manually checks the money has arrived, usually within 24 hours on working
+                days. Submitting false or edited proof is not allowed and may lead to account suspension. If less than the
+                total is received, the plan stays inactive until the balance is paid. SociyoHub never asks for your UPI
+                PIN, OTP or bank password.
+              </p>
             </section>
 
             <section>

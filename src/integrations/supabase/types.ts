@@ -8080,6 +8080,36 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_payment_settings: {
+        Row: {
+          id: boolean
+          payee_name: string
+          razorpay_locked: boolean
+          updated_at: string
+          updated_by: string | null
+          upi_enabled: boolean
+          upi_vpa: string
+        }
+        Insert: {
+          id?: boolean
+          payee_name: string
+          razorpay_locked?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          upi_enabled?: boolean
+          upi_vpa: string
+        }
+        Update: {
+          id?: boolean
+          payee_name?: string
+          razorpay_locked?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          upi_enabled?: boolean
+          upi_vpa?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           ads_banner_enabled: boolean
@@ -9533,6 +9563,137 @@ export type Database = {
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saas_upi_payment_requests: {
+        Row: {
+          amount_paise: number
+          base_amount_paise: number | null
+          consent_at: string
+          consent_version: string
+          created_at: string
+          custom_offer_id: string | null
+          flat_count: number
+          id: string
+          paid_at: string
+          payee_vpa: string
+          payer_name: string
+          payer_upi: string | null
+          plan_id: string
+          price_per_flat_inr: number
+          pricing_type: string
+          proof_path: string
+          received_amount_paise: number | null
+          reject_code: string | null
+          request_id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          society_id: string
+          status: string
+          submitted_by: string
+          subscription_payment_id: string | null
+          tax_amount_paise: number | null
+          tax_percent: number | null
+          term_months: number
+          updated_at: string
+          utr: string
+        }
+        Insert: {
+          amount_paise: number
+          base_amount_paise?: number | null
+          consent_at?: string
+          consent_version: string
+          created_at?: string
+          custom_offer_id?: string | null
+          flat_count: number
+          id?: string
+          paid_at: string
+          payee_vpa: string
+          payer_name: string
+          payer_upi?: string | null
+          plan_id: string
+          price_per_flat_inr: number
+          pricing_type: string
+          proof_path: string
+          received_amount_paise?: number | null
+          reject_code?: string | null
+          request_id: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id: string
+          status?: string
+          submitted_by: string
+          subscription_payment_id?: string | null
+          tax_amount_paise?: number | null
+          tax_percent?: number | null
+          term_months?: number
+          updated_at?: string
+          utr: string
+        }
+        Update: {
+          amount_paise?: number
+          base_amount_paise?: number | null
+          consent_at?: string
+          consent_version?: string
+          created_at?: string
+          custom_offer_id?: string | null
+          flat_count?: number
+          id?: string
+          paid_at?: string
+          payee_vpa?: string
+          payer_name?: string
+          payer_upi?: string | null
+          plan_id?: string
+          price_per_flat_inr?: number
+          pricing_type?: string
+          proof_path?: string
+          received_amount_paise?: number | null
+          reject_code?: string | null
+          request_id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          society_id?: string
+          status?: string
+          submitted_by?: string
+          subscription_payment_id?: string | null
+          tax_amount_paise?: number | null
+          tax_percent?: number | null
+          term_months?: number
+          updated_at?: string
+          utr?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_upi_payment_requests_custom_offer_id_fkey"
+            columns: ["custom_offer_id"]
+            isOneToOne: false
+            referencedRelation: "custom_plan_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_upi_payment_requests_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_upi_payment_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saas_upi_payment_requests_subscription_payment_id_fkey"
+            columns: ["subscription_payment_id"]
+            isOneToOne: false
+            referencedRelation: "saas_subscription_payments"
             referencedColumns: ["id"]
           },
         ]
@@ -13160,6 +13321,7 @@ export type Database = {
         Args: { _days: number; _reason: string; _society_id: string }
         Returns: Json
       }
+      admin_get_saas_upi_proof_path: { Args: { _id: string }; Returns: string }
       admin_get_society_upi: { Args: { _society_id: string }; Returns: Json }
       admin_global_metrics: {
         Args: never
@@ -13271,6 +13433,10 @@ export type Database = {
         }[]
       }
       admin_list_role_access: { Args: never; Returns: Json }
+      admin_list_saas_upi_payments: {
+        Args: { _before?: string; _limit?: number; _status: string }
+        Returns: Json
+      }
       admin_list_societies: {
         Args: never
         Returns: {
@@ -13576,6 +13742,16 @@ export type Database = {
         Args: { _channel: string; _reason: string }
         Returns: number
       }
+      admin_review_saas_upi_payment: {
+        Args: {
+          _approve: boolean
+          _id: string
+          _note?: string
+          _received_amount_paise?: number
+          _reject_code?: string
+        }
+        Returns: Json
+      }
       admin_revoke_guard_access: {
         Args: { _guard_user_id: string; _reason: string }
         Returns: Json
@@ -13691,6 +13867,15 @@ export type Database = {
       }
       admin_set_role_access: {
         Args: { _active: boolean; _reason: string; _role_id: string }
+        Returns: undefined
+      }
+      admin_set_saas_payment_methods: {
+        Args: {
+          _payee_name: string
+          _razorpay_locked: boolean
+          _upi_enabled: boolean
+          _upi_vpa: string
+        }
         Returns: undefined
       }
       admin_set_society_automation: {
@@ -15032,6 +15217,7 @@ export type Database = {
         Args: { _society_id: string; _user_id: string }
         Returns: Json
       }
+      get_saas_payment_methods: { Args: never; Returns: Json }
       get_society_access_status: {
         Args: { _society_id: string }
         Returns: {
@@ -15807,6 +15993,10 @@ export type Database = {
           role: string
           society_name: string
         }[]
+      }
+      list_my_saas_upi_payments: {
+        Args: { _society_id: string }
+        Returns: Json
       }
       list_my_societies: {
         Args: never
@@ -16917,6 +17107,22 @@ export type Database = {
           _reference_no: string
         }
         Returns: string
+      }
+      submit_saas_upi_payment: {
+        Args: {
+          _consent_version: string
+          _expected_amount_paise: number
+          _flat_quantity: number
+          _paid_at: string
+          _payer_name: string
+          _payer_upi: string
+          _plan_id: string
+          _proof_path: string
+          _request_id: string
+          _society_id: string
+          _utr: string
+        }
+        Returns: Json
       }
       submit_survey_response: {
         Args: { _answers: Json; _poll_id: string }

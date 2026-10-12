@@ -73,6 +73,7 @@ import { Route as AdminAdminSecurityRouteImport } from './routes/_admin/admin.se
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin/admin.settings'
 import { Route as AdminAdminStaffRouteImport } from './routes/_admin/admin.staff'
 import { Route as AdminAdminSubscriptionPaymentsRouteImport } from './routes/_admin/admin.subscription-payments'
+import { Route as AdminAdminUpiPaymentsRouteImport } from './routes/_admin/admin.upi-payments'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin.users'
 import { Route as AdminAdminWithdrawalsRouteImport } from './routes/_admin/admin.withdrawals'
 import { Route as ResidentAppAchievementsRouteImport } from './routes/_resident/app.achievements'
@@ -542,6 +543,11 @@ const AdminAdminSubscriptionPaymentsRoute =
     path: '/admin/subscription-payments',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminAdminUpiPaymentsRoute = AdminAdminUpiPaymentsRouteImport.update({
+  id: '/admin/upi-payments',
+  path: '/admin/upi-payments',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -1384,6 +1390,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminAdminSettingsRoute
   '/admin/staff': typeof AdminAdminStaffRoute
   '/admin/subscription-payments': typeof AdminAdminSubscriptionPaymentsRoute
+  '/admin/upi-payments': typeof AdminAdminUpiPaymentsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
@@ -1592,6 +1599,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminAdminSettingsRoute
   '/admin/staff': typeof AdminAdminStaffRoute
   '/admin/subscription-payments': typeof AdminAdminSubscriptionPaymentsRoute
+  '/admin/upi-payments': typeof AdminAdminUpiPaymentsRoute
   '/admin/users': typeof AdminAdminUsersRoute
   '/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/app/achievements': typeof ResidentAppAchievementsRoute
@@ -1806,6 +1814,7 @@ export interface FileRoutesById {
   '/_admin/admin/settings': typeof AdminAdminSettingsRoute
   '/_admin/admin/staff': typeof AdminAdminStaffRoute
   '/_admin/admin/subscription-payments': typeof AdminAdminSubscriptionPaymentsRoute
+  '/_admin/admin/upi-payments': typeof AdminAdminUpiPaymentsRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_admin/admin/withdrawals': typeof AdminAdminWithdrawalsRoute
   '/_resident/app/achievements': typeof ResidentAppAchievementsRoute
@@ -2017,6 +2026,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/staff'
     | '/admin/subscription-payments'
+    | '/admin/upi-payments'
     | '/admin/users'
     | '/admin/withdrawals'
     | '/app/achievements'
@@ -2225,6 +2235,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/staff'
     | '/admin/subscription-payments'
+    | '/admin/upi-payments'
     | '/admin/users'
     | '/admin/withdrawals'
     | '/app/achievements'
@@ -2438,6 +2449,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/settings'
     | '/_admin/admin/staff'
     | '/_admin/admin/subscription-payments'
+    | '/_admin/admin/upi-payments'
     | '/_admin/admin/users'
     | '/_admin/admin/withdrawals'
     | '/_resident/app/achievements'
@@ -3079,6 +3091,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/subscription-payments'
       fullPath: '/admin/subscription-payments'
       preLoaderRoute: typeof AdminAdminSubscriptionPaymentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/upi-payments': {
+      id: '/_admin/admin/upi-payments'
+      path: '/admin/upi-payments'
+      fullPath: '/admin/upi-payments'
+      preLoaderRoute: typeof AdminAdminUpiPaymentsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/admin/users': {
@@ -4139,6 +4158,7 @@ interface AdminRouteChildren {
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
   AdminAdminStaffRoute: typeof AdminAdminStaffRoute
   AdminAdminSubscriptionPaymentsRoute: typeof AdminAdminSubscriptionPaymentsRoute
+  AdminAdminUpiPaymentsRoute: typeof AdminAdminUpiPaymentsRoute
   AdminAdminUsersRoute: typeof AdminAdminUsersRoute
   AdminAdminWithdrawalsRoute: typeof AdminAdminWithdrawalsRoute
   AdminAdminSocietiesIdRoute: typeof AdminAdminSocietiesIdRoute
@@ -4171,6 +4191,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
   AdminAdminStaffRoute: AdminAdminStaffRoute,
   AdminAdminSubscriptionPaymentsRoute: AdminAdminSubscriptionPaymentsRoute,
+  AdminAdminUpiPaymentsRoute: AdminAdminUpiPaymentsRoute,
   AdminAdminUsersRoute: AdminAdminUsersRoute,
   AdminAdminWithdrawalsRoute: AdminAdminWithdrawalsRoute,
   AdminAdminSocietiesIdRoute: AdminAdminSocietiesIdRoute,

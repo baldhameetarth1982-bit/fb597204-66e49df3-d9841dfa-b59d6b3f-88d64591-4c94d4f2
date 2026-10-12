@@ -74,6 +74,12 @@ function RefundPage() {
               stops future renewals but the current term is <strong>non-refundable</strong>. If you were charged in error or
               billed after cancellation, email the same address within 48 hours for a full refund.
             </p>
+            <p className="text-muted-foreground mt-2">
+              <strong>UPI plan payments.</strong> If a UPI payment can't be verified, or less than the plan total was
+              received, we tell you the reason in the app. You can pay the remaining amount and submit again, or email us
+              to have the received amount returned to the same UPI account within 7 working days. Payments made by
+              mistake to SociyoHub's UPI ID for society maintenance are returned in full.
+            </p>
           </section>
 
           <section>

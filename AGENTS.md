@@ -14,3 +14,5 @@
 - Personal alert/marketing choices live in user_preferences (owner-only RLS); a BEFORE INSERT trigger on user_notifications drops categories a person turned off, never urgent ones; so every notification path obeys the choice without per-feature code.
 - In-app text questions use askText() from src/components/system/AskTextDialog.tsx (host mounted once in __root); never window.prompt, which is blocked in installed apps and looks untrustworthy. Yes/no checks use askConfirm() from the same file, never window.confirm.
 - Super Admin sessions sign out after 30 idle minutes via useIdleSignOut in the _admin layout (activity shared across tabs through localStorage); the admin panel is the highest-value target.
+- SaaS UPI prices (plan length saving + discount code + GST) are computed only by the saas_upi_quote RPC and re-checked in submit_saas_upi_payment_v2; the browser only displays them, so no tampered amount can be approved.
+- Subscription renewal reminders run daily via run_logged_db_job('subscription-renewal-reminders'), deduped per society/end-date/day; email copies are queued in message_deliveries and go out once the email channel is switched on.

@@ -11,7 +11,7 @@ describe("dosGuard", () => {
   beforeEach(_resetDosGuard);
   it("allows normal traffic", () => expect(dosGuard(req())).toBeNull());
   it("rejects odd methods, long URLs, huge bodies", () => {
-    expect(dosGuard(req({ method: "TRACE" }))?.status).toBe(405);
+    expect(dosGuard(req({ method: "PROPFIND" }))?.status).toBe(405);
     expect(dosGuard(req({ path: "/" + "a".repeat(9000) }))?.status).toBe(414);
     expect(dosGuard(req({ method: "POST", headers: { "content-length": String(MAX_BODY_BYTES + 1) } }))?.status).toBe(413);
   });

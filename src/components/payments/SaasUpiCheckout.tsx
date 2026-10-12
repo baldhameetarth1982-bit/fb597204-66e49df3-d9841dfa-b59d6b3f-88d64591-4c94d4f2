@@ -74,7 +74,7 @@ export function SaasUpiCheckout(p: Props) {
 
   const amount = (amountPaise / 100).toFixed(2);
   const note = `SociyoHub ${p.planName} ${term}M`;
-  const upiLink = `upi://pay?pa=${encodeURIComponent(p.upiVpa)}&pn=${encodeURIComponent(p.payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+  const upiLink = `upi://pay?pa=${encodeURIComponent(p.upiVpa)}&pn=${encodeURIComponent(p.payeeName)}&am=${amount}&mam=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
   const pending = mine.data?.find((r) => r.status === "pending");
   const lastRejected = mine.data?.[0]?.status === "rejected" ? mine.data[0] : null;
 

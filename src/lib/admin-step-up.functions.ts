@@ -203,7 +203,7 @@ export const passkeyAuthVerify = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-export const useBackupCode = createServerFn({ method: "POST" })
+export const redeemBackupCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4}-?[A-Z0-9]{4}$/) }).parse(d))
   .handler(async ({ data, context }) => {

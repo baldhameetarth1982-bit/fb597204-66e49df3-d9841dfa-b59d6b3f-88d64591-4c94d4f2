@@ -11876,6 +11876,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          email_digest: boolean
+          marketing_consent_at: string | null
+          marketing_emails: boolean
+          notify_announcements: boolean
+          notify_bills: boolean
+          notify_visitors: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email_digest?: boolean
+          marketing_consent_at?: string | null
+          marketing_emails?: boolean
+          notify_announcements?: boolean
+          notify_bills?: boolean
+          notify_visitors?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email_digest?: boolean
+          marketing_consent_at?: string | null
+          marketing_emails?: boolean
+          notify_announcements?: boolean
+          notify_bills?: boolean
+          notify_visitors?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_role_block_scopes: {
         Row: {
           assigned_by: string | null
@@ -16387,6 +16420,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      notification_pref_category: { Args: { _kind: string }; Returns: string }
       ops_daily_reminders: { Args: never; Returns: undefined }
       parking_evidence_target: { Args: { _violation: string }; Returns: string }
       parking_record_evidence: {

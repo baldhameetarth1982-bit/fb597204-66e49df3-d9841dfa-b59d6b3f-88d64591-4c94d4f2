@@ -9105,6 +9105,39 @@ export type Database = {
         }
         Relationships: []
       }
+      reverse_otp_sessions: {
+        Row: {
+          attempt_token_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          provider_session_id: number
+          status: string
+        }
+        Insert: {
+          attempt_token_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone: string
+          provider_session_id: number
+          status?: string
+        }
+        Update: {
+          attempt_token_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          provider_session_id?: number
+          status?: string
+        }
+        Relationships: []
+      }
       rfid_credentials: {
         Row: {
           created_at: string

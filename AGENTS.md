@@ -18,3 +18,5 @@
 - Subscription renewal reminders run daily via run_logged_db_job('subscription-renewal-reminders'), deduped per society/end-date/day; email copies are queued in message_deliveries and go out once the email channel is switched on.
 
 - Super Admin power needs 3 steps per sign-in session: password, a passkey or backup code (admin_step_sessions, written only by admin-step-up.functions.ts after WebAuthn verification) and TOTP aal2; public._super_admin_step_ok() gates has_role/is_super_admin/is_super_admin_internal so RLS and RPCs enforce it, not just the UI.
+
+- Reverse OTP phone sign-in runs only through /api/public/auth/reverse-otp: the provider secret stays server-side, attempts are hashed one-time rows in reverse_otp_sessions, and sign-in succeeds only after a server check_otp_session call; the unsigned provider webhook is acknowledged but never trusted.

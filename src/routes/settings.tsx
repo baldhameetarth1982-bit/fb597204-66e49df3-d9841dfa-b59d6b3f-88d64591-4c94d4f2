@@ -32,13 +32,11 @@ import { TwoFactorCard } from "@/components/security/TwoFactorCard";
 import { tu } from "@/lib/i18n";
 
 const DEFAULT_PREFERENCES = {
-  pushAnnouncements: true,
-  pushVisitors: true,
-  pushBills: true,
-  emailDigest: false,
-  showPhoneToNeighbors: false,
-  showFlatToVisitors: true,
-  marketingEmails: false,
+  notify_announcements: true,
+  notify_visitors: true,
+  notify_bills: true,
+  email_digest: false,
+  marketing_emails: false,
 };
 
 export const Route = createFileRoute("/settings")({
@@ -68,25 +66,41 @@ function SettingsPage() {
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const { t } = useTranslation();
-  const preferencesKey = user?.id ? `sociohub:prefs:${user.id}` : null;
-
-  // local-only preferences
-  const [prefs, setPrefs] = useState(DEFAULT_PREFERENCES);
+  const qc = useQueryClient();
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
     setPhone(profile?.phone ?? "");
-    try {
-      const raw = preferencesKey ? localStorage.getItem(preferencesKey) : null;
-      setPrefs(raw ? { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) } : DEFAULT_PREFERENCES);
-    } catch {}
-  }, [preferencesKey, profile]);
+  }, [profile]);
 
-  useEffect(() => {
-    try {
-      if (preferencesKey) localStorage.setItem(preferencesKey, JSON.stringify(prefs));
-    } catch {}
-  }, [preferencesKey, prefs]);
+  // Preferences live on the account (all devices) and are obeyed by every notification path.
+  const prefsQ = useQuery({
+    enabled: !!user?.id,
+    queryKey: ["user-preferences", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_preferences")
+        .select("notify_announcements, notify_visitors, notify_bills, email_digest, marketing_emails")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data ?? DEFAULT_PREFERENCES;
+    },
+  });
+  const prefs = prefsQ.data ?? DEFAULT_PREFERENCES;
+  const savePref = useMutation({
+    networkMode: "always",
+    retry: false,
+    mutationFn: async (patch: Partial<typeof DEFAULT_PREFERENCES>) => {
+      const next = { ...prefs, ...patch, user_id: user!.id };
+      const { error } = await supabase.from("user_preferences").upsert(next, { onConflict: "user_id" });
+      if (error) throw error;
+      return next;
+    },
+    onSuccess: (next) => { qc.setQueryData(["user-preferences", user?.id], next); toast.success(tu("ln.pref.saved")); },
+    onError: () => toast.error(tu("ln.pref.saveFail")),
+  });
+  const setPref = (patch: Partial<typeof DEFAULT_PREFERENCES>) => { if (user?.id && !savePref.isPending) savePref.mutate(patch); };
 
   if (isLoading) {
     return (
@@ -216,27 +230,41 @@ function SettingsPage() {
 
         {/* NOTIFICATIONS */}
         <TabsContent value="notifications" className="mt-0">
-          <SettingsGroup title={t("st.notifPrefs")} scope={t("st.thisDevice")} icon={Bell}
-            hint={t("st.deviceHint")}>
-            <Row label={t("st.n.ann")} desc={t("st.n.annD")} checked={prefs.pushAnnouncements} onChange={(v) => setPrefs({ ...prefs, pushAnnouncements: v })} />
-            <Separator />
-            <Row label={t("st.n.vis")} desc={t("st.n.visD")} checked={prefs.pushVisitors} onChange={(v) => setPrefs({ ...prefs, pushVisitors: v })} />
-            <Separator />
-            <Row label={t("st.n.bills")} desc={t("st.n.billsD")} checked={prefs.pushBills} onChange={(v) => setPrefs({ ...prefs, pushBills: v })} />
-            <Separator />
-            <Row label={t("st.n.digest")} desc={t("st.n.digestD")} checked={prefs.emailDigest} onChange={(v) => setPrefs({ ...prefs, emailDigest: v })} />
+          <SettingsGroup title={t("st.notifPrefs")} scope={tu("ln.pref.account")} icon={Bell}
+            hint={tu("ln.pref.hint")}>
+            {prefsQ.isError ? (
+              <div role="alert" className="py-3 text-sm">
+                {tu("ln.pref.loadFail")}{" "}
+                <Button variant="outline" className="ml-2 h-11 rounded-xl" onClick={() => void prefsQ.refetch()}>{t("common.retry")}</Button>
+              </div>
+            ) : (
+              <>
+                <Row label={t("st.n.ann")} desc={tu("ln.pref.annD")} checked={prefs.notify_announcements} disabled={prefsQ.isLoading || savePref.isPending} onChange={(v) => setPref({ notify_announcements: v })} />
+                <Separator />
+                <Row label={t("st.n.vis")} desc={tu("ln.pref.visD")} checked={prefs.notify_visitors} disabled={prefsQ.isLoading || savePref.isPending} onChange={(v) => setPref({ notify_visitors: v })} />
+                <Separator />
+                <Row label={t("st.n.bills")} desc={tu("ln.pref.billsD")} checked={prefs.notify_bills} disabled={prefsQ.isLoading || savePref.isPending} onChange={(v) => setPref({ notify_bills: v })} />
+                <Separator />
+                <Row label={t("st.n.digest")} desc={tu("ln.pref.digestOff")} checked={false} disabled onChange={() => {}} />
+              </>
+            )}
           </SettingsGroup>
         </TabsContent>
 
         {/* PRIVACY */}
         <TabsContent value="privacy" className="mt-0">
-          <SettingsGroup title={t("st.privacy")} scope={t("st.thisDevice")} icon={Lock}
-            hint={t("st.deviceHint")}>
-            <Row label={t("st.p.phone")} desc={t("st.p.phoneD")} checked={prefs.showPhoneToNeighbors} onChange={(v) => setPrefs({ ...prefs, showPhoneToNeighbors: v })} />
+          <SettingsGroup title={t("st.privacy")} scope={tu("ln.pref.account")} icon={Lock}>
+            <div className="py-3">
+              <p className="font-medium">{tu("ln.pref.whoTitle")}</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                <li>{tu("ln.pref.who1")}</li>
+                <li>{tu("ln.pref.who2")}</li>
+                <li>{tu("ln.pref.who3")}</li>
+                <li>{tu("ln.pref.who4")}</li>
+              </ul>
+            </div>
             <Separator />
-            <Row label={t("st.p.flat")} desc={t("st.p.flatD")} checked={prefs.showFlatToVisitors} onChange={(v) => setPrefs({ ...prefs, showFlatToVisitors: v })} />
-            <Separator />
-            <Row label={t("st.p.mkt")} desc={t("st.p.mktD")} checked={prefs.marketingEmails} onChange={(v) => setPrefs({ ...prefs, marketingEmails: v })} />
+            <Row label={t("st.p.mkt")} desc={tu("ln.pref.mktD")} checked={prefs.marketing_emails} disabled={prefsQ.isLoading || prefsQ.isError || savePref.isPending} onChange={(v) => setPref({ marketing_emails: v })} />
           </SettingsGroup>
         </TabsContent>
 
@@ -453,9 +481,9 @@ function DeleteAccountRow({ email, onSignOut }: { email: string | null; onSignOu
 }
 
 function Row({
-  label, desc, checked, onChange,
+  label, desc, checked, onChange, disabled,
 }: {
-  label: string; desc?: string; checked: boolean; onChange: (v: boolean) => void;
+  label: string; desc?: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3">
@@ -463,7 +491,7 @@ function Row({
         <p className="font-medium">{label}</p>
         {desc && <p className="text-sm text-muted-foreground">{desc}</p>}
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} disabled={disabled} />
     </div>
   );
 }

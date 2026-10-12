@@ -1,4 +1,5 @@
 import { MinutesCorrections } from "@/components/meetings/MinutesCorrections";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { askText } from "@/components/system/AskTextDialog";
 import { AISummaryCard } from "@/components/shared/AISummaryCard";
 import { createFileRoute } from "@tanstack/react-router";
@@ -245,7 +246,7 @@ function MeetingDetail({ m, societyId, onChanged, onEdit }: { m: Meeting; societ
               <Textarea rows={6} maxLength={20000} value={minutes} onChange={(e) => setMinutes(e.target.value)} placeholder={tu("op.what_was_discussed_and_decided")} />
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" className="min-h-11 rounded-xl" disabled={!!busy} onClick={() => run("min", "meeting_save_minutes", { _id: m.id, _minutes: minutes }, "Minutes saved")}>{tu("op.save_minutes")}</Button>
-                <Button className="min-h-11 rounded-xl" disabled={!!busy || !m.minutes} onClick={() => confirm("Publish minutes? They can't be edited afterwards.") && status("minutes_published", "Minutes published — invitees are notified")}>{tu("op.publish_minutes")}</Button>
+                <Button className="min-h-11 rounded-xl" disabled={!!busy || !m.minutes} onClick={() => void askConfirm("Publish minutes? They can't be edited afterwards.").then((ok) => ok && status("minutes_published", "Minutes published — invitees are notified"))}>{tu("op.publish_minutes")}</Button>
               </div>
             </>
           ) : (

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
 import { ListChecks, Plus, Loader2, Trash2, GripVertical } from "lucide-react";
@@ -105,7 +106,7 @@ function CustomFieldsPage() {
 
   async function remove(id: string) {
     if (!societyId) return;
-    if (!confirm("Delete this field and all resident values?")) return;
+    if (!(await askConfirm("Delete this field and all resident values?"))) return;
     const { error } = await supabase.from("custom_fields").delete().eq("id", id);
     if (error) { toast.error(userMessage(error)); return; }
     void load(societyId);

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -72,7 +73,7 @@ function VotesAdmin() {
   }
   async function setStatus(id: string, s: "open" | "closed") {
     const msg = s === "open" ? "Open voting now? Title, options, eligibility and closing time will be locked." : "Close voting now? Closed votes can't be reopened.";
-    if (!confirm(msg)) return;
+    if (!(await askConfirm(msg))) return;
     setBusy(true);
     try { await govRpc("vote_set_status", { _id: id, _status: s }); toast.success(s === "open" ? "Voting is open — eligible residents are notified" : "Voting closed"); refresh(); qc.invalidateQueries({ queryKey: ["vote-results", id] }); }
     catch (e) { toast.error(govError(e)); } finally { setBusy(false); }

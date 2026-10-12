@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Building2, Tags, CreditCard, Banknote, Megaphone, ReceiptText,
   Users, BarChart3, Settings, ShieldCheck, ScrollText, Search, Sparkles,
   TrendingUp, Heart, FileText, Palette, Bell, HardDriveDownload, UserCog,
-} from "lucide-react";
+, QrCode } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
@@ -32,6 +32,7 @@ const groups: { label: string; items: Item[] }[] = [
     { title: "nav.plans", url: "/admin/plans", icon: Tags },
     { title: "nav.customPlans", url: "/admin/custom-plans", icon: Sparkles },
     { title: "nav.planPayments", url: "/admin/subscription-payments", icon: ReceiptText },
+    { title: "UPI plan payments", url: "/admin/upi-payments", icon: QrCode },
     { title: "nav.revenue", url: "/admin/revenue", icon: BarChart3 },
     { title: "nav.income", url: "/admin/income", icon: BarChart3 },
     { title: "nav.withdrawals", url: "/admin/withdrawals", icon: Banknote },

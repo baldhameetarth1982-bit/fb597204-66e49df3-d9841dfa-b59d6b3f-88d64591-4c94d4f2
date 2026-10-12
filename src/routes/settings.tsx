@@ -4,6 +4,7 @@ import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { userMessage } from "@/lib/user-error";
 import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2, User as UserIcon, Save, Bell, ShieldCheck, Lock,
   Users as UsersIcon, HelpCircle, LogOut, ChevronRight, BadgeCheck,

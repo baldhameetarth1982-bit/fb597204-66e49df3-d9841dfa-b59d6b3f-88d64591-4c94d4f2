@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Building2, Tags, CreditCard, Banknote, Megaphone, ReceiptText,
   Users, BarChart3, Settings, ShieldCheck, ScrollText, Search, Sparkles,
   TrendingUp, Heart, FileText, Palette, Bell, HardDriveDownload, UserCog,
-, QrCode } from "lucide-react";
+  QrCode,
+} from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,

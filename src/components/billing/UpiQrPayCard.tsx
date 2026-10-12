@@ -46,7 +46,7 @@ export function UpiQrPayCard({ billId, onSubmitted }: { billId: string; onSubmit
   if (q.isLoading || q.isError || !q.data?.available) return null;
   const d = q.data;
   if (d.amountDue <= 0) return null;
-  const upiLink = `upi://pay?pa=${encodeURIComponent(d.upiVpa)}&pn=${encodeURIComponent(d.payeeName)}&am=${d.amountDue.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Maintenance ${d.billNumber ?? ""}`.trim())}`;
+  const upiLink = `upi://pay?pa=${encodeURIComponent(d.upiVpa)}&pn=${encodeURIComponent(d.payeeName)}&am=${d.amountDue.toFixed(2)}&mam=${d.amountDue.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Maintenance ${d.billNumber ?? ""}`.trim())}`;
 
   async function onSubmit() {
     if (busy) return;
@@ -79,9 +79,8 @@ export function UpiQrPayCard({ billId, onSubmitted }: { billId: string; onSubmit
       ) : (
         <div className="space-y-4">
           <div className="flex flex-col items-center gap-2 rounded-xl bg-muted/50 p-4">
-            {d.qrUrl
-              ? <img src={d.qrUrl} alt={`UPI QR for ${d.payeeName}`} className="h-52 w-52 rounded-lg bg-card object-contain" />
-              : <div className="rounded-lg bg-card p-3"><QRCodeSVG value={upiLink} size={192} aria-label={`UPI QR for ${d.payeeName}`} /></div>}
+            {/* Always the bill-specific QR: the amount is filled in and fixed, so no part payments. */}
+            <div className="rounded-lg bg-card p-3"><QRCodeSVG value={upiLink} size={192} marginSize={2} aria-label={`UPI QR to pay ${INR(d.amountDue)} to ${d.payeeName}`} /></div>
             <p className="text-sm font-medium">{d.payeeName}</p>
             <p className="text-xs text-muted-foreground break-all">{d.upiVpa}</p>
             <p className="text-lg font-semibold tabular-nums">{tu("op.pay")} {INR(d.amountDue)}</p>

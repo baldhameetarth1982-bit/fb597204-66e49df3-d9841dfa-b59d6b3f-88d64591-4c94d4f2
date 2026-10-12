@@ -228,7 +228,7 @@ function CheckoutPage() {
                 </div>
               ) : plan && payable ? (
                 <div className="space-y-4">
-                  <p className="text-sm font-semibold">Choose how to pay</p>
+                  <p className="text-sm font-semibold">{tu("ln.upi.choose")}</p>
                   <div role="radiogroup" aria-label="Payment method" className="grid grid-cols-2 gap-3">
                     <button
                       type="button" role="radio" aria-checked={method === "upi"}
@@ -237,8 +237,8 @@ function CheckoutPage() {
                       className={`min-h-[72px] rounded-xl border-2 p-3 text-left transition-colors disabled:opacity-50 ${method === "upi" ? "border-primary bg-primary/5" : "border-border"}`}
                     >
                       <QrCode className="h-5 w-5 text-primary" />
-                      <p className="mt-1 text-sm font-semibold">UPI (scan QR)</p>
-                      <p className="text-xs text-muted-foreground">{upiOn ? "Any UPI app" : "Unavailable"}</p>
+                      <p className="mt-1 text-sm font-semibold">{tu("ln.upi.mUpi")}</p>
+                      <p className="text-xs text-muted-foreground">{upiOn ? tu("ln.upi.anyApp") : tu("ln.upi.unavailable")}</p>
                     </button>
                     <button
                       type="button" role="radio" aria-checked={method === "razorpay"}
@@ -249,8 +249,8 @@ function CheckoutPage() {
                     >
                       <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                       <CreditCard className="h-5 w-5 text-muted-foreground" />
-                      <p className="mt-1 text-sm font-semibold">Card / Netbanking</p>
-                      <p className="text-xs text-muted-foreground">{razorpayLocked || !live ? "Temporarily out of service" : "Via Razorpay"}</p>
+                      <p className="mt-1 text-sm font-semibold">{tu("ln.upi.mCard")}</p>
+                      <p className="text-xs text-muted-foreground">{razorpayLocked || !live ? tu("ln.upi.out") : tu("ln.upi.viaRzp")}</p>
                     </button>
                   </div>
                   {method === "upi" && upiOn && profile?.society_id ? (
@@ -275,9 +275,9 @@ function CheckoutPage() {
                     </>
                   ) : (
                     <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 text-sm">
-                      <p className="font-semibold">Online payment is temporarily out of service</p>
+                      <p className="font-semibold">{tu("ln.upi.outTitle")}</p>
                       <p className="mt-1 text-muted-foreground">
-                        For help, email <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a>.
+                        {tu("ln.upi.help")} <a href="mailto:sociohub710@gmail.com" className="underline">sociohub710@gmail.com</a>.
                       </p>
                     </div>
                   )}

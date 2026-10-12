@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { askConfirm } from "@/components/system/AskTextDialog";
 import { superAdminReason } from "@/lib/super-admin-reason";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -93,7 +94,7 @@ function MessagingPage() {
                   <Button variant="outline" className="min-h-11 w-full" disabled={retry.isPending} onClick={() => retry.mutate(c.channel)}>Retry failed (last 3 days)</Button>
                   {Number(c.counts?.unconfirmed ?? 0) > 0 && (
                     <Button variant="outline" className="min-h-11 w-full" disabled={resend.isPending}
-                      onClick={() => { if (window.confirm("These messages may already have reached people. Resend anyway?")) resend.mutate(c.channel); }}>
+                      onClick={() => { void askConfirm("These messages may already have reached people. Resend anyway?").then((ok) => { if (ok) resend.mutate(c.channel); }); }}>
                       Resend unconfirmed
                     </Button>
                   )}

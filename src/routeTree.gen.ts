@@ -17,7 +17,6 @@ import { Route as SocietyRouteImport } from './routes/_society'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuditorRouteImport } from './routes/auditor'
 import { Route as ContactRouteImport } from './routes/contact'
-import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as FoundersRouteImport } from './routes/founders'
 import { Route as GdprRouteImport } from './routes/gdpr'
 import { Route as LegalRouteImport } from './routes/legal'
@@ -259,11 +258,6 @@ const AuditorRoute = AuditorRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CookiesRoute = CookiesRouteImport.update({
-  id: '/cookies',
-  path: '/cookies',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FoundersRoute = FoundersRouteImport.update({
@@ -1352,7 +1346,6 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
-  '/cookies': typeof CookiesRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
@@ -1565,7 +1558,6 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
-  '/cookies': typeof CookiesRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
@@ -1782,7 +1774,6 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auditor': typeof AuditorRoute
   '/contact': typeof ContactRoute
-  '/cookies': typeof CookiesRoute
   '/founders': typeof FoundersRoute
   '/gdpr': typeof GdprRoute
   '/legal': typeof LegalRoute
@@ -1997,7 +1988,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/auditor'
     | '/contact'
-    | '/cookies'
     | '/founders'
     | '/gdpr'
     | '/legal'
@@ -2210,7 +2200,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/auditor'
     | '/contact'
-    | '/cookies'
     | '/founders'
     | '/gdpr'
     | '/legal'
@@ -2426,7 +2415,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/auditor'
     | '/contact'
-    | '/cookies'
     | '/founders'
     | '/gdpr'
     | '/legal'
@@ -2644,7 +2632,6 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuditorRoute: typeof AuditorRoute
   ContactRoute: typeof ContactRoute
-  CookiesRoute: typeof CookiesRoute
   FoundersRoute: typeof FoundersRoute
   GdprRoute: typeof GdprRoute
   LegalRoute: typeof LegalRoute
@@ -2736,13 +2723,6 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cookies': {
-      id: '/cookies'
-      path: '/cookies'
-      fullPath: '/cookies'
-      preLoaderRoute: typeof CookiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/founders': {
@@ -4590,7 +4570,6 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuditorRoute: AuditorRoute,
   ContactRoute: ContactRoute,
-  CookiesRoute: CookiesRoute,
   FoundersRoute: FoundersRoute,
   GdprRoute: GdprRoute,
   LegalRoute: LegalRoute,

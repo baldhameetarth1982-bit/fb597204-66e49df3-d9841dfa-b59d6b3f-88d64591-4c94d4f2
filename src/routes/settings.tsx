@@ -11,6 +11,7 @@ import {
   Globe, Smartphone, Trash2, Building2, Receipt, CreditCard,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteMyAccount } from "@/lib/account-deletion.functions";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, PageShell } from "@/components/shared/PageHeader";
 import { Input } from "@/components/ui/input";

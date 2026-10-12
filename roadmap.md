@@ -44,10 +44,10 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Partner programme moved from Profile to Society hub
 
 ## Owner follow-up — Oct 12 (switches, real settings, master prompt re-check)
-- [ ] Phase A: on/off switches look stretched — fix size everywhere
-- [ ] Phase A: Alerts settings saved to the account (all devices) and really obeyed by every in-app notification
-- [ ] Phase A: Privacy settings tell the truth (no fake "show phone/flat" switches); marketing consent stored with time
-- [ ] Phase A: Weekly email digest — honest "email not connected yet" state (no email sending exists)
-- [ ] Phase B: replace every native browser confirm() with the in-app confirm dialog
-- [ ] Phase C: re-check tester items 11 (notification tabs), 15 (legal page edges), 3 (resident bottom menu), 13 (share)
+- [x] Phase A: on/off switches look stretched — fix size everywhere
+- [x] Phase A: Alerts settings saved to the account (all devices) and really obeyed by every in-app notification
+- [x] Phase A: Privacy settings tell the truth (no fake "show phone/flat" switches); marketing consent stored with time
+- [x] Phase A: Weekly email digest — honest "email not connected yet" state (no email sending exists)
+- [x] Phase B: replace every native browser confirm() with the in-app confirm dialog
+- [x] Phase C: re-check tester items 11 (notification tabs), 15 (legal page edges), 3 (resident bottom menu), 13 (share)
 - [ ] Phase D: custom-plan chat → email copy — blocked: email sending isn't connected (needs workspace admin email setup)

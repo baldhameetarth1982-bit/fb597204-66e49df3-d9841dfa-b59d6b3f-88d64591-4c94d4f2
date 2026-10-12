@@ -33,7 +33,7 @@ const groups: { label: string; items: Item[] }[] = [
     { title: "nav.plans", url: "/admin/plans", icon: Tags },
     { title: "nav.customPlans", url: "/admin/custom-plans", icon: Sparkles },
     { title: "nav.planPayments", url: "/admin/subscription-payments", icon: ReceiptText },
-    { title: "UPI plan payments", url: "/admin/upi-payments", icon: QrCode },
+    { title: "ln.upi.nav", url: "/admin/upi-payments", icon: QrCode },
     { title: "nav.revenue", url: "/admin/revenue", icon: BarChart3 },
     { title: "nav.income", url: "/admin/income", icon: BarChart3 },
     { title: "nav.withdrawals", url: "/admin/withdrawals", icon: Banknote },

@@ -1,4 +1,14 @@
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+
+// Recent screens are kept on this device only (wiped on sign-out via the
+// offline-cache prefix) so reopening the app shows them instantly.
+const persister = createSyncStoragePersister({
+  storage: typeof window !== "undefined" ? window.localStorage : undefined,
+  key: "sociohub:cache:rq",
+  throttleTime: 1000,
+});
 import { useEffect, useRef, useState } from "react";
 import { isMarketingPage } from "@/lib/marketing-pages";
 import {
@@ -168,7 +178,15 @@ function RootComponent() {
   }, []);
   return (
     <RootErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: 24 * 60 * 60 * 1000,
+          buster: "v1",
+          dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.status === "success" && q.meta?.persist !== false },
+        }}
+      >
         <AuthProvider>
           <AccountDataBoundary />
           <SplashScreen />
@@ -183,7 +201,7 @@ function RootComponent() {
           <OfflineBanner />
           <KeyboardFieldVisibility />
         </AuthProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </RootErrorBoundary>
   );
 }
@@ -197,7 +215,8 @@ function AccountDataBoundary() {
   // a previous society's records can never render after switching.
   useEffect(() => {
     const nextUserId = user ? `${user.id}:${profile?.society_id ?? ""}` : null;
-    if (previousUserId.current !== undefined && previousUserId.current !== nextUserId) {
+    // Only a real account/society switch clears; the first sign-in restore after a reload keeps the saved screens.
+    if (previousUserId.current && previousUserId.current !== nextUserId) {
       void queryClient.cancelQueries();
       queryClient.clear();
     }

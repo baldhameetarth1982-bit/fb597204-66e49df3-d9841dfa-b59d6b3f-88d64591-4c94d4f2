@@ -62,9 +62,10 @@ function HelpdeskPage() {
   const initialCat: TicketCategory = search.cat && search.cat !== "all" ? search.cat : "complaint";
 
   const [tab, setTab] = useState<Tab>("active");
-  const [openNew, setOpenNew] = useState(false);
+  const draftKey = user ? `helpdesk:${user.id}` : null;
+  const [openNew, setOpenNew, clearOpen] = useDraftState(draftKey && `${draftKey}:open`, false);
   const [selected, setSelected] = useState<string | null>(null);
-  const [form, setForm] = useState({ category: initialCat, subject: "", description: "", priority: "normal" as TicketPriority });
+  const [form, setForm, clearForm] = useDraftState(draftKey && `${draftKey}:form`, { category: initialCat, subject: "", description: "", priority: "normal" as TicketPriority });
 
   useEffect(() => {
     if (search.new) {
@@ -108,6 +109,7 @@ function HelpdeskPage() {
       toast.success(form.category === "approval" ? t("hd.t.sentApproval") : t("hd.t.raised"));
       setOpenNew(false);
       setForm((f) => ({ ...f, subject: "", description: "", priority: "normal" }));
+      clearForm(); clearOpen();
       setTab("active");
       qc.invalidateQueries({ queryKey: ["helpdesk"] });
     },

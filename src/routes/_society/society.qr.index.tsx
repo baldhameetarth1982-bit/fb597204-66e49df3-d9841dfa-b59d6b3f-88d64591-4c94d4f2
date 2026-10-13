@@ -60,7 +60,7 @@ function SmartQrListPage({ societyId }: { societyId: string }) {
           </Button>
         }
       />
-      <MobileScreen className="-mt-6 max-w-3xl">
+      <MobileScreen className="max-w-3xl">
         <AccountsCenterTabs />
         <div className="mb-4 grid grid-cols-2 gap-3">
           <Stat label={tu("op.active_qr_codes")} value={q.isLoading ? "—" : String(activeCount)} />

@@ -48,10 +48,14 @@ export function ProtectedRoute({ pathname, children }: { pathname: string; child
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/login"} replace />;
   }
 
+  // Society admins and block admins also live in the society, so they may switch to the
+  // resident view (/app). The guard screen stays guard-only.
+  const isCommittee = primaryRole === ROLES.SOCIETY_ADMIN || primaryRole === ROLES.BLOCK_ADMIN;
   if (
     pathname.startsWith("/app") &&
     primaryRole !== ROLES.RESIDENT &&
-    primaryRole !== ROLES.SECURITY
+    primaryRole !== ROLES.SECURITY &&
+    !(isCommittee && !pathname.startsWith("/app/guard"))
   ) {
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/login"} replace />;
   }

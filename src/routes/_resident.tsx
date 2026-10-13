@@ -40,7 +40,11 @@ function ResidentGuard() {
     );
   }
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (primaryRole !== ROLES.RESIDENT && primaryRole !== ROLES.SECURITY) {
+  const isCommittee = primaryRole === ROLES.SOCIETY_ADMIN || primaryRole === ROLES.BLOCK_ADMIN;
+  if (isCommittee && pathname.startsWith("/app/guard")) {
+    return <Navigate to={ROLE_HOME[primaryRole!]} replace />;
+  }
+  if (primaryRole !== ROLES.RESIDENT && primaryRole !== ROLES.SECURITY && !isCommittee) {
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/onboarding"} replace />;
   }
   if (
@@ -58,7 +62,7 @@ function ResidentGuard() {
     <>
       <ElderModeSync />
       <EmergencyBroadcastBanner />
-      {primaryRole === ROLES.RESIDENT && <HomeSwitcher />}
+      {(primaryRole === ROLES.RESIDENT || isCommittee) && <HomeSwitcher />}
       <Outlet />
       <AskAIFab />
     </>

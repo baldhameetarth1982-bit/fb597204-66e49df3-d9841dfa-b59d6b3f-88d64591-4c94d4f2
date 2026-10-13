@@ -388,4 +388,6 @@ export const launch = {
   "ln.acc.under18": ["You must be 18 or older to use SociyoHub.", "SociyoHub इस्तेमाल करने के लिए आपकी उम्र 18 वर्ष या उससे अधिक होनी चाहिए।", "SociyoHub વાપરવા માટે તમારી ઉંમર 18 વર્ષ કે તેથી વધુ હોવી જોઈએ."],
   "ln.acc.saveFail": ["Couldn't save. Please try again.", "सेव नहीं हो सका। कृपया फिर से कोशिश करें।", "સેવ થઈ શક્યું નહીં. કૃપા કરીને ફરી પ્રયાસ કરો."],
   "ln.acc.continue": ["Continue", "आगे बढ़ें", "આગળ વધો"],
+  "ln.view.resident": ["Resident view", "निवासी व्यू", "રહેવાસી વ્યૂ"],
+  "ln.view.committee": ["Committee view", "कमेटी व्यू", "કમિટી વ્યૂ"],
 } satisfies Catalog;

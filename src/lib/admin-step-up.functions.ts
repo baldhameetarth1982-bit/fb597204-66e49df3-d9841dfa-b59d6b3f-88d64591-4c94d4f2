@@ -230,11 +230,13 @@ export const createBackupCodes = createServerFn({ method: "POST" })
     const ctx = context as unknown as Ctx;
     await requireSuperAdminRole(ctx);
     const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
-    const { count } = await admin.from("admin_backup_codes" as any).select("id", { count: "exact", head: true }).eq("user_id", ctx.userId);
-    // First set is allowed during setup (right after adding a device); replacing codes needs a fully verified session.
-    const stepped = await isSteppedUp(admin, ctx);
+    // Count only UNUSED codes. With none left (first setup or all used up), the fingerprint/face
+    // step of this session is enough, so TOTP is never blocked. Replacing a still-usable set
+    // needs a fully verified session (all three steps).
+    const { count: unused } = await admin.from("admin_backup_codes" as any).select("id", { count: "exact", head: true }).eq("user_id", ctx.userId).is("used_at", null);
     const { data: step } = await admin.from("admin_step_sessions" as any).select("method").eq("user_id", ctx.userId).eq("session_id", sessionId(ctx)).maybeSingle();
-    if ((count ?? 0) > 0 ? !stepped : !step) throw new Error("Finish the fingerprint/face step first.");
+    const allowed = (unused ?? 0) > 0 ? await isSteppedUp(admin, ctx) : !!step;
+    if (!allowed) throw new Error("Finish the fingerprint/face step first.");
     await limit(ctx.userId, "backup-code-create", 3);
     const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const codes = Array.from({ length: 10 }, () => {

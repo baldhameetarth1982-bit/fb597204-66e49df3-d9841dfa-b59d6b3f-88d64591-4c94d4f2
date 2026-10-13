@@ -10,6 +10,7 @@ import { getApplicablePlans } from "@/lib/pricing-engine";
 import { saveIntendedPlan, type IntendedTerm } from "@/lib/intended-plan";
 import { tu } from "@/lib/i18n";
 import { PlanFeatureList, isPlanKey } from "@/components/subscription/PlanFeatureList";
+import { termPricePerFlat, termFullPricePerFlat } from "@/lib/plan-term-price";
 
 export const Route = createFileRoute("/onboarding/choose-plan")({
   head: () => ({
@@ -72,7 +73,19 @@ function ChoosePlanFirst() {
                 <button type="button" role="radio" aria-checked={chosen === p.plan_id} onClick={() => setPlan(p.plan_id)} className="block w-full rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   {p.is_recommended && <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"><Sparkles className="h-3 w-3" />{tu("op.most_popular")}</span>}
                   <h2 className="text-xl font-semibold tracking-tight">{p.plan_name}</h2>
-                  <p className="mt-2"><span className="text-3xl font-bold tabular-nums">₹{p.price_per_flat_inr ?? 0}</span> <span className="text-sm text-muted-foreground">{tu("ln.ob.perFlat")}</span></p>
+                  {(() => {
+                    const monthly = Number(p.price_per_flat_inr ?? 0);
+                    const full = termFullPricePerFlat(monthly, term);
+                    const net = termPricePerFlat(monthly, term);
+                    const unit = term === 1 ? tu("ln.ob.perFlat") : `/ flat / ${term === 3 ? "quarter" : "year"}`;
+                    return (
+                      <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+                        {net < full && <span className="text-lg text-muted-foreground line-through tabular-nums" aria-label={`was ₹${full}`}>₹{full}</span>}
+                        <span className="text-3xl font-bold tabular-nums">₹{net}</span>
+                        <span className="text-sm text-muted-foreground">{unit}</span>
+                      </p>
+                    );
+                  })()}
                 </button>
                 {isPlanKey(p.plan_id) ? (
                   <PlanFeatureList plan={p.plan_id} className="mt-4" />

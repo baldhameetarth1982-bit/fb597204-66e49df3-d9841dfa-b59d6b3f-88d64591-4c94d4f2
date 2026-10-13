@@ -434,7 +434,7 @@ export function ProcurementAuditSection({ fy }: { fy: number }) {
   const csv = () => {
     const esc = (v: unknown) => { const s = v == null ? "" : String(v); return /[",\n]/.test(s) || /^[=+\-@]/.test(s) ? `"${s.replace(/^([=+\-@])/, "'$1").replace(/"/g, '""')}"` : s; };
     const lines = [["Section", "Category/No", "Title", "Status", "Vendor", "Budget/Approved", "Actual/Invoice", "Variance/Invoice ref", "Payment ref (info)", "Linked expense", "Expense amount", "Expense status"].join(",")];
-    q.data!.budgets.forEach((r) => lines.push(["Budget", r.category, "", r.revision_count ? `revised x${r.revision_count}` : "", "", r.approved_amount, r.actual, r.variance, "", "", "", ""].map(esc).join(",")));
+    q.data!.budgets.forEach((r) => lines.push(["Budget", r.category, "", r.revision_count > 0 ? `revised x${r.revision_count}` : "", "", r.approved_amount, r.actual, r.variance, "", "", "", ""].map(esc).join(",")));
     q.data!.procs.forEach((r) => lines.push(["Procurement", r.request_no, r.title, r.status, r.vendor_name, r.approved_amount, r.invoice_amount, r.invoice_ref, r.payment_ref, r.expense_id, r.expense_amount, r.expense_status].map(esc).join(",")));
     const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
     const a = document.createElement("a"); a.href = url; a.download = `procurement-budget-${fy}.csv`; a.click(); URL.revokeObjectURL(url);

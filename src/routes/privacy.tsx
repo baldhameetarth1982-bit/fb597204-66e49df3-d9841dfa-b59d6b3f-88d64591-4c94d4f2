@@ -98,7 +98,8 @@ function PrivacyPage() {
               <h2 className="text-lg font-semibold mb-2">5A. Where your data goes (service providers)</h2>
               <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
                 <li><strong>Lovable Cloud (database, file storage and app hosting, built on Supabase and Cloudflare):</strong> stores all society data and files and runs the app.</li>
-                <li><strong>Google Firebase:</strong> phone OTP and Google sign-in, and push notifications to your device.</li>
+                <li><strong>Google Firebase:</strong> Google sign-in and push notifications to your device.</li>
+                <li><strong>ReverseOTP:</strong> confirms your phone number when you send it a verification message by SMS or WhatsApp; it receives your phone number and that message.</li>
                 <li><strong>Google Gemini and OpenAI (through Lovable AI):</strong> only when an AI feature is used, such as the AI Secretary, invoice reading, or reading an uploaded Aadhaar image for optional verification; they receive only the question, document or image needed for that task.</li>
                 <li><strong>Razorpay:</strong> only if a society pays its SociyoHub subscription online once that option is switched on; it receives payment details, never resident data.</li>
               </ul>

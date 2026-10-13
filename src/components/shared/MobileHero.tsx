@@ -5,7 +5,7 @@ export type HeroVariant = "teal" | "navy" | "muted";
 
 const variants: Record<HeroVariant, string> = {
   teal: "bg-primary text-primary-foreground",
-  navy: "bg-foreground text-background",
+  navy: "bg-primary text-primary-foreground",
   muted: "bg-secondary text-secondary-foreground",
 };
 

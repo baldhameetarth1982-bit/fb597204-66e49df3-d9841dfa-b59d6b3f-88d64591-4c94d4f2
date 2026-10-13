@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useDraftState } from "@/hooks/useDraftState";
 import { useServerFn } from "@tanstack/react-start";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,8 +44,9 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
   const setMethod = (_: Method) => {};
   void setMethod;
   const [amount, setAmount] = useState<string>(billAmount ? String(billAmount) : "");
-  const [reference, setReference] = useState("");
-  const [notes, setNotes] = useState("");
+  // Unsent transfer details survive tab switches; cleared once submitted.
+  const [reference, setReference, clearRefDraft] = useDraftState(`bank-transfer-ref:${billId}`, "");
+  const [notes, setNotes, clearNotesDraft] = useDraftState(`bank-transfer-notes:${billId}`, "");
   const [paymentDate, setPaymentDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [idKey] = useState<string>(() => randomKey(billId));
   const [submitting, setSubmitting] = useState(false);
@@ -132,6 +134,8 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
         },
       });
       setPaymentId(res.paymentId);
+      clearRefDraft();
+      clearNotesDraft();
       toast.success(tu("op.payment_recorded_waiting_for_admin"));
     } catch (e) {
       toast.error((e as Error).message);

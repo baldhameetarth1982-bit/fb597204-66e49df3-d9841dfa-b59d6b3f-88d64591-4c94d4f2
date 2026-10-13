@@ -7,7 +7,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { EmptyState, PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { EmptyState, PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,8 +130,9 @@ function GenerateBillsPage() {
   const STEPS = ["Configure", "Review", "Generate"] as const;
 
   return (
+    <>
+    <MobileHero title={tu("op.generate_bills")} subtitle={tu("op.create_one_maintenance_bill_for")} icon={FilePlus2} />
     <PageShell>
-      <PageHeader title={tu("op.generate_bills")} description={tu("op.create_one_maintenance_bill_for")} />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
       <div className="mb-5 grid gap-2 sm:grid-cols-2">
         <Link to="/society/billing/single" className="flex min-h-11 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm hover:bg-muted/60">
@@ -257,5 +259,6 @@ function GenerateBillsPage() {
         </section>
       )}
     </PageShell>
+    </>
   );
 }

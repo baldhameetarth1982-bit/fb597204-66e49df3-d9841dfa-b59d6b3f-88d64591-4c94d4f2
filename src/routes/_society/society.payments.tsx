@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StatusChip } from "@/components/system/StatusChip";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import {
   AlertDialog,
@@ -179,8 +180,9 @@ function SocietyPaymentsRoute() {
   const methodLabel = (m: string) => (m === "upi_qr" ? "UPI QR" : m === "razorpay" ? "Online (Razorpay)" : m === "bank_transfer" ? "Bank Transfer" : m === "cash" ? "Cash" : m);
 
   return (
+    <>
+    <MobileHero title={tu("billingTabs.payments")} subtitle={tu("op.cash_bank_transfer_and_upi")} icon={Receipt} />
     <PageShell>
-      <PageHeader title={tu("billingTabs.payments")} description={tu("op.cash_bank_transfer_and_upi")} />
       {societyId && <UpiSettingsCard societyId={societyId} />}
       {societyId && <RefundNeededCard societyId={societyId} />}
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
@@ -342,6 +344,7 @@ function SocietyPaymentsRoute() {
         </AlertDialogContent>
       </AlertDialog>
     </PageShell>
+    </>
   );
 }
 

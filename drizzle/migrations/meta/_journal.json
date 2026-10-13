@@ -1737,6 +1737,13 @@
       "when": 1791876116394,
       "tag": "0247_saas_receipt_number_super_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 248,
+      "version": "7",
+      "when": 1791879563760,
+      "tag": "0248_plan_change_scheduling_and_upgrades",
+      "breakpoints": true
     }
   ]
 }

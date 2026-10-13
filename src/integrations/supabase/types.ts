@@ -9772,6 +9772,7 @@ export type Database = {
           flat_count: number
           gross_amount_paise: number | null
           id: string
+          kind: string
           paid_at: string
           payee_vpa: string
           payer_name: string
@@ -9795,6 +9796,8 @@ export type Database = {
           term_discount_paise: number
           term_months: number
           updated_at: string
+          upgrade_days: number | null
+          upgrade_from_plan_id: string | null
           utr: string
         }
         Insert: {
@@ -9809,6 +9812,7 @@ export type Database = {
           flat_count: number
           gross_amount_paise?: number | null
           id?: string
+          kind?: string
           paid_at: string
           payee_vpa: string
           payer_name: string
@@ -9832,6 +9836,8 @@ export type Database = {
           term_discount_paise?: number
           term_months?: number
           updated_at?: string
+          upgrade_days?: number | null
+          upgrade_from_plan_id?: string | null
           utr: string
         }
         Update: {
@@ -9846,6 +9852,7 @@ export type Database = {
           flat_count?: number
           gross_amount_paise?: number | null
           id?: string
+          kind?: string
           paid_at?: string
           payee_vpa?: string
           payer_name?: string
@@ -9869,6 +9876,8 @@ export type Database = {
           term_discount_paise?: number
           term_months?: number
           updated_at?: string
+          upgrade_days?: number | null
+          upgrade_from_plan_id?: string | null
           utr?: string
         }
         Relationships: [
@@ -10381,6 +10390,8 @@ export type Database = {
           razorpay_account_id: string | null
           registration_no: string | null
           registration_number: string | null
+          scheduled_plan_id: string | null
+          scheduled_plan_starts_at: string | null
           signature_url: string | null
           state: string | null
           status: string
@@ -10429,6 +10440,8 @@ export type Database = {
           razorpay_account_id?: string | null
           registration_no?: string | null
           registration_number?: string | null
+          scheduled_plan_id?: string | null
+          scheduled_plan_starts_at?: string | null
           signature_url?: string | null
           state?: string | null
           status?: string
@@ -10477,6 +10490,8 @@ export type Database = {
           razorpay_account_id?: string | null
           registration_no?: string | null
           registration_number?: string | null
+          scheduled_plan_id?: string | null
+          scheduled_plan_starts_at?: string | null
           signature_url?: string | null
           state?: string | null
           status?: string
@@ -13330,7 +13345,19 @@ export type Database = {
         Returns: string
       }
       _roles_admin_society: { Args: never; Returns: string }
+      _saas_apply_paid_term: {
+        Args: { _months: number; _plan_id: string; _society_id: string }
+        Returns: Json
+      }
       _saas_term_discount_percent: { Args: { _term: number }; Returns: number }
+      _saas_term_effect: {
+        Args: { _plan_id: string; _society_id: string }
+        Returns: Json
+      }
+      _saas_upgrade_quote: {
+        Args: { _plan_id: string; _society_id: string }
+        Returns: Json
+      }
       _sec_admin_society: { Args: never; Returns: string }
       _send_platform_announcement: { Args: { _id: string }; Returns: number }
       _society_flat_capacity: { Args: { _society_id: string }; Returns: number }
@@ -14510,6 +14537,7 @@ export type Database = {
         Args: { _id: string; _reason: string; _status: string }
         Returns: undefined
       }
+      apply_due_plan_switches: { Args: never; Returns: number }
       apply_overdue_point_decay: { Args: never; Returns: number }
       apply_referral_for_current_user: {
         Args: { _code: string }
@@ -16989,6 +17017,10 @@ export type Database = {
       }
       run_logged_db_job: { Args: { _job: string }; Returns: string }
       run_paid_home_bill_cycle: { Args: never; Returns: number }
+      saas_plan_change_options: {
+        Args: { _plan_id: string; _society_id: string }
+        Returns: Json
+      }
       saas_subscription_quote: {
         Args: { _flat_quantity?: number; _plan_id: string; _society_id: string }
         Returns: Json
@@ -17434,6 +17466,21 @@ export type Database = {
           _request_id: string
           _society_id: string
           _term_months: number
+          _utr: string
+        }
+        Returns: Json
+      }
+      submit_saas_upi_upgrade: {
+        Args: {
+          _consent_version: string
+          _expected_amount_paise: number
+          _paid_at: string
+          _payer_name: string
+          _payer_upi: string
+          _plan_id: string
+          _proof_path: string
+          _request_id: string
+          _society_id: string
           _utr: string
         }
         Returns: Json

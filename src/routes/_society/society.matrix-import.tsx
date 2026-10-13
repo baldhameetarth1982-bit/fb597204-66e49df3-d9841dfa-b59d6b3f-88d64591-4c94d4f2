@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -17,7 +18,7 @@ import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/matrix-import")({
   head: () => ({ meta: [{ title: "Bulk Maintenance Import — SociyoHub" }] }),
-  component: MatrixImportPage,
+  component: () => (<FeatureGate feature="matrix"><MatrixImportPage /></FeatureGate>),
 });
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

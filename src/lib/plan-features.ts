@@ -807,7 +807,7 @@ const CATALOG: FeatureCatalogEntry[] = [
     minPlan: "pro",
     roles: ["resident"],
     route: "/app/achievements",
-    routes: ["/app/activity", "/app/trust"],
+    routes: ["/app/trust"],
     keywords: ["achievement", "badge", "reward"],
     icon: "Sparkles",
     status: "available",

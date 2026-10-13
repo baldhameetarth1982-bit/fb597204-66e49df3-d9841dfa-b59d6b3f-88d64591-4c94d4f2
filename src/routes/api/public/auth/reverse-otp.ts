@@ -191,7 +191,7 @@ export const Route = createFileRoute("/api/public/auth/reverse-otp")({
               console.error("[reverse-otp] provisioning failed");
               return json({ error: "Sign-in is unavailable right now. Please try again." }, { status: 503 });
             }
-            await db.from("phone_verifications").upsert({ user_id: created.user.id, phone }, { onConflict: "user_id" });
+            await db.from("phone_verifications").upsert({ user_id: created.user.id, phone, verified_via: "reverse_otp" }, { onConflict: "user_id" });
             email = synthetic;
           }
           if (!email) return json({ error: "Sign-in is unavailable right now." }, { status: 503 });

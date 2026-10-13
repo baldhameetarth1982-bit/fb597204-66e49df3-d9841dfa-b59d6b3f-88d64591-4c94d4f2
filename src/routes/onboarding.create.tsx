@@ -76,7 +76,12 @@ function CreateSocietyWizardPage() {
           });
           sid = created.id;
         } catch (e) {
-          toast.error(tu("op.could_not_start_setup_your"));
+          const msg = e instanceof Error ? e.message : "";
+          if (msg.includes("PHONE_VERIFICATION_REQUIRED")) {
+            setPhoneVerified(false);
+          } else {
+            toast.error(tu("op.could_not_start_setup_your"));
+          }
         }
       }
       setSocietyId(sid ?? null);

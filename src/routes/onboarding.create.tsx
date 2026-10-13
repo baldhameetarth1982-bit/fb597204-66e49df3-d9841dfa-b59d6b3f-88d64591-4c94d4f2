@@ -133,7 +133,7 @@ function CreateSocietyWizardPage() {
       <div className="min-h-dvh grid place-items-center bg-secondary/40 p-4">
         <div role="alert" className="w-full max-w-md rounded-2xl border border-border bg-background p-6 text-center space-y-4 shadow-sm">
           <p className="text-sm">{blocked}</p>
-          <Button asChild variant="outline" className="min-h-11"><Link to="/onboarding">{tu("common.back")}</Link></Button>
+          <Button asChild variant="outline" className="min-h-11"><Link to="/onboarding" search={{ ref: undefined }}>{tu("common.back")}</Link></Button>
         </div>
       </div>
     );

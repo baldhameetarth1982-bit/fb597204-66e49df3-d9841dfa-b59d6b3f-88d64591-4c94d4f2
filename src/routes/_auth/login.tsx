@@ -12,13 +12,11 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GoogleButton } from "@/components/auth/GoogleButton";
-import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 import { ReverseOtpSignIn } from "@/components/auth/ReverseOtpSignIn";
 import { TruecallerButton } from "@/components/auth/TruecallerButton";
 import {
   getCapabilities,
   signInWithGoogleFirebase,
-  signInWithVerifiedPhone,
   startTruecallerAuth,
 } from "@/lib/auth-service";
 import { sanitizeNextPath } from "@/lib/safe-next";
@@ -64,7 +62,6 @@ function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState<null | "email" | "google" | "truecaller">(null);
   const [limited, setLimited] = useState<string | null>(null);
-  const [phoneMethod, setPhoneMethod] = useState<"reverse" | "code">("reverse");
   const caps = useMemo(() => getCapabilities(), []);
   const assertAllowed = useServerFn(assertLoginAllowed);
   const signInFn = useServerFn(emailSignIn);
@@ -239,27 +236,7 @@ function LoginPage() {
 
       {step === "phone" && (
         <div className="mt-6">
-          {phoneMethod === "reverse" ? (
-            <>
-              <ReverseOtpSignIn onSignedIn={() => goNext(next, () => navigate({ to: "/" }))} />
-              <Button type="button" variant="link" className="mt-2 w-full text-xs" onClick={() => setPhoneMethod("code")}>
-                {t("reverseOtp.useCode", "Get a code by SMS instead")}
-              </Button>
-            </>
-          ) : (
-          <PhoneOtpForm
-            submitLabel={t("auth.verifySignIn")}
-            onVerified={async ({ phone, firebaseIdToken }) => {
-              const r = await signInWithVerifiedPhone({ phone, firebaseIdToken });
-              if (!r.ok) {
-                toast.error(r.error ?? t("auth.toast.couldNotSignIn"));
-                return;
-              }
-              toast.success(t("auth.toast.signedIn"));
-              goNext(next, () => navigate({ to: "/" }));
-            }}
-          />
-          )}
+          <ReverseOtpSignIn onSignedIn={() => goNext(next, () => navigate({ to: "/" }))} />
           <p className="mt-4 text-[11px] text-muted-foreground text-center">
             {t("auth.autoCreate")}
           </p>

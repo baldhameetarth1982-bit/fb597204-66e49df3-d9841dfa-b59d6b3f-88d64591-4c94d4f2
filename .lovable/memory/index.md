@@ -28,3 +28,4 @@ RLS, plan-gate, Razorpay, KYC RPCs, audit_log, multi-tenant isolation triggers a
 - [Super Admin Roadmap](mem://features/super-admin) — Societies, users, plans, custom pricing, discounts, lifetime access, revenue, ads, payment analytics
 - [Society Dashboard](mem://features/society-dashboard) — Operational tiles (pending maintenance, balances, visitors, approvals, complaints)
 - [Launch decisions](mem://features/launch-decisions) — Auto-billing rule, 4 accounting sections, pill tabs, hide test data, premium Indian theme, role shells
+- [Plan changes & guard shifts](mem://features/plan-changes-trial-guard) — proration, downgrade next period, 30-day Pro trial, guard shift windows

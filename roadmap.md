@@ -55,3 +55,15 @@ Stage 3C/3D runtime verification paused by owner.
 - [ ] Before Play Store release: run an authorised Strix (AI penetration test) scan against a staging copy only — never the live site or protected society; fix findings, then re-scan.
 
 - [ ] Reverse OTP by SMS for phone sign-in — blocked: needs an inbound SMS number provider and its keys.
+
+## Owner follow-up — Oct 13 (plans, trial, phone, guard shifts)
+- [ ] Mid-period upgrade: pay only the remaining days' price difference (server-quoted)
+- [ ] Downgrade applies from next period only, no refund
+- [ ] Renewals (same or other plan) start after the current paid period ends, never overlap
+- [ ] Plan-ending banner 5/4/3/2 days, 24-hour countdown on last day (dashboard)
+- [ ] New societies: 30-day Pro trial, skip plan choice, go straight to setup (existing trials unchanged)
+- [ ] Block duplicate society: same name + same address, or one phone creating a second society
+- [ ] Phone required for every role (resident, admin, block admin, guard); age chosen at sign-up
+- [ ] Society admin "Switch to resident" option
+- [ ] Post-login choice: Create society / Join as resident / Join as guard (by code, admin approves)
+- [ ] Guard shifts: admin sets weekdays + hours; guard panel blocked outside them by server time; SOS still works

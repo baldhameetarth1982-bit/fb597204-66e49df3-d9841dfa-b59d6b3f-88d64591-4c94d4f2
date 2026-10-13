@@ -8038,6 +8038,7 @@ export type Database = {
           updated_at: string
           user_id: string
           verified_at: string
+          verified_via: string
         }
         Insert: {
           created_at?: string
@@ -8046,6 +8047,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           verified_at?: string
+          verified_via?: string
         }
         Update: {
           created_at?: string
@@ -8054,6 +8056,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verified_at?: string
+          verified_via?: string
         }
         Relationships: []
       }

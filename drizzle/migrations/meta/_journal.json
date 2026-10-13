@@ -1716,6 +1716,13 @@
       "when": 1791870472422,
       "tag": "0244_fix_procurement_report_volatility",
       "breakpoints": true
+    },
+    {
+      "idx": 245,
+      "version": "7",
+      "when": 1791872477884,
+      "tag": "0245_phone_verified_via_reverse_otp",
+      "breakpoints": true
     }
   ]
 }

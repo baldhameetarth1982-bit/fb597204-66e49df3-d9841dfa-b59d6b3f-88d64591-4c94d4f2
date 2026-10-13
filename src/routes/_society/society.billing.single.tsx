@@ -1,3 +1,4 @@
+import { useDraftState } from "@/hooks/useDraftState";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -42,7 +43,8 @@ function SingleBillPage() {
 
   const [flats, setFlats] = useState<Flat[]>([]);
   const [loading, setLoading] = useState(true);
-  const [flatId, setFlatId] = useState("");
+  const draftKey = societyId ? `single-bill:${societyId}` : null;
+  const [flatId, setFlatId, clearFlat] = useDraftState(draftKey && `${draftKey}:flat`, "");
   const [periods, setPeriods] = useState<Period[]>([]);
   const [periodsLoading, setPeriodsLoading] = useState(false);
   // month start ("YYYY-MM-01") → status of a live bill that already covers it
@@ -51,13 +53,14 @@ function SingleBillPage() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [monthly, setMonthly] = useState("");
-  const [discount, setDiscount] = useState("");
-  const [discountReason, setDiscountReason] = useState("");
-  const [charges, setCharges] = useState<Charge[]>([]);
-  const [dueDate, setDueDate] = useState(() => {
+  const [discount, setDiscount, clearDisc] = useDraftState(draftKey && `${draftKey}:disc`, "");
+  const [discountReason, setDiscountReason, clearReason] = useDraftState(draftKey && `${draftKey}:reason`, "");
+  const [charges, setCharges, clearCharges] = useDraftState<Charge[]>(draftKey && `${draftKey}:charges`, []);
+  const [dueDate, setDueDate, clearDue] = useDraftState(draftKey && `${draftKey}:due`, () => {
     const d = new Date(); d.setDate(d.getDate() + 10); return d.toISOString().slice(0, 10);
   });
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes, clearNotes] = useDraftState(draftKey && `${draftKey}:notes`, "");
+  const clearDraft = () => { clearFlat(); clearDisc(); clearReason(); clearCharges(); clearDue(); clearNotes(); };
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -144,6 +147,7 @@ function SingleBillPage() {
         });
         if (adjErr) toast.error(toSafeFinanceMessage(adjErr));
       }
+      clearDraft();
       toast.success(tu("ln.sb.done"));
       if (billId) navigate({ to: "/society/bills/$id", params: { id: String(billId) } });
     } catch (e) {

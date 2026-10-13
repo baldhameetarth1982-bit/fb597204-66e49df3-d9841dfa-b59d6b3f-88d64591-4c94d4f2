@@ -21,7 +21,11 @@ export const getRouter = () => {
       queries: {
         // Dedupe remounts/navigation refetches; screens with live needs set their own staleTime.
         staleTime: 30_000,
-        gcTime: 5 * 60_000,
+        // Kept a day so screens persisted on the device survive long breaks.
+        gcTime: 24 * 60 * 60_000,
+        // Coming back to the tab must not reload the screen under the user.
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: true,
         retry: (failureCount, error) => !isNonRetryable(error) && failureCount < 2,
         retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
       },

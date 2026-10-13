@@ -54,7 +54,9 @@ function PrivacyPage() {
               <p className="text-muted-foreground">We collect only the information strictly necessary for society management:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1 text-muted-foreground">
                 <li><strong>Identity:</strong> full name, flat/unit details, block, relationship (owner / tenant / family).</li>
-                <li><strong>Contact:</strong> email address and phone number, used for authentication and notifications.</li>
+                <li><strong>Contact:</strong> email address and phone number, used for authentication and notifications. Phone numbers are confirmed by a message you send from your own phone (SMS or WhatsApp) through our phone-verification provider, ReverseOTP.</li>
+                <li><strong>Year of birth:</strong> asked once when you create your account, only to confirm you are 18 or older. We do not ask for your full date of birth.</li>
+                <li><strong>Guard work details:</strong> for security guards, the society code you joined with, your join request, the weekdays and hours your committee sets for your shifts, and gate activity during those shifts.</li>
                 <li><strong>Optional KYC:</strong> last four digits of Aadhaar and a document image, only when you choose to verify.</li>
                 <li><strong>Payment metadata:</strong> payment/order reference IDs, amount, bill reference. We never see or store card numbers, CVV or UPI PINs. Maintenance is paid by cash, bank transfer or UPI directly to your society; you may upload a payment screenshot and reference number for verification.</li>
                 <li><strong>Community activity:</strong> posts, comments, complaints, poll votes and other content you publish inside your society.</li>

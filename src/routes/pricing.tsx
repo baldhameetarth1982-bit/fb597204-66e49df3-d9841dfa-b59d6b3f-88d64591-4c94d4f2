@@ -10,6 +10,7 @@ import { getApplicablePlans, getPricingSettings } from "@/lib/pricing-engine";
 import { LegalFooter } from "@/components/shared/LegalFooter";
 import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/context/AuthContext";
+import { PlanFeatureList, isPlanKey } from "@/components/subscription/PlanFeatureList";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -233,13 +234,17 @@ function PublicPricing() {
                         );
                       })()}
                     </div>
-                    <ul className="mt-4 space-y-2 text-sm flex-1">
-                      {p.features.map((f, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <Check className="h-4 w-4 text-primary mt-0.5" /> {f}
-                        </li>
-                      ))}
-                    </ul>
+                    {isPlanKey(p.plan_id) ? (
+                      <PlanFeatureList plan={p.plan_id} className="mt-4 flex-1" />
+                    ) : (
+                      <ul className="mt-4 space-y-2 text-sm flex-1">
+                        {p.features.map((f, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <Check className="h-4 w-4 text-primary mt-0.5" /> {f}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <Button asChild className="mt-6 min-h-[48px] rounded-2xl">
                       <Link to="/checkout/$planId" params={{ planId: p.plan_id }}>
                         Choose {p.plan_name}

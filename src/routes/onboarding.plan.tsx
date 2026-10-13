@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { OnboardingStepper } from "@/components/system/OnboardingStepper";
 import { getApplicablePlans, startSocietyTrial, getPricingSettings } from "@/lib/pricing-engine";
 import { tu } from "@/lib/i18n";
+import { PlanFeatureList, isPlanKey } from "@/components/subscription/PlanFeatureList";
 import { readIntendedPlan } from "@/lib/intended-plan";
 
 export const Route = createFileRoute("/onboarding/plan")({

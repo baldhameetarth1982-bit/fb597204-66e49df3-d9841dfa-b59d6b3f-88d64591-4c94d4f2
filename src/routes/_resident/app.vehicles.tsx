@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useTranslation } from "react-i18next";
 import { localeTag, tu } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
@@ -23,7 +24,11 @@ import { useSocietyId } from "@/hooks/useSocietyId";
 
 export const Route = createFileRoute("/_resident/app/vehicles")({
   head: () => ({ meta: [{ title: "My Vehicles — SociyoHub" }, { name: "description", content: "Add your vehicles so guards can verify you at the gate." }] }),
-  component: VehiclesPage,
+  component: () => (
+    <FeatureGate feature="vehicles">
+      <VehiclesPage />
+    </FeatureGate>
+  ),
 });
 
 interface Vehicle {

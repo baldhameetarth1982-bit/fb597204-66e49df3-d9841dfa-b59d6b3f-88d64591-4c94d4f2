@@ -1688,6 +1688,13 @@
       "when": 1791782253877,
       "tag": "0240_reverse_otp_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 241,
+      "version": "7",
+      "when": 1791863645342,
+      "tag": "0241_saas_term_whole_rupee_prices",
+      "breakpoints": true
     }
   ]
 }

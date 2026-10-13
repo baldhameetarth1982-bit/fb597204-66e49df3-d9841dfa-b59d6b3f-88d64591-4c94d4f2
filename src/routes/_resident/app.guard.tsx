@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { NeedsAttention } from "@/components/shared/NeedsAttention";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -29,7 +30,11 @@ export const Route = createFileRoute("/_resident/app/guard")({
       { name: "description", content: "Fast visitor check-in, check-out and vehicle checks for society guards." },
     ],
   }),
-  component: GuardPage,
+  component: () => (
+    <FeatureGate feature="guard_visitor_entry">
+      <GuardPage />
+    </FeatureGate>
+  ),
 });
 
 type Scope = "today" | "expected" | "inside" | "overstay" | "history";

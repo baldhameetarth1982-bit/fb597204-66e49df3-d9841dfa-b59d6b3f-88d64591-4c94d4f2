@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
@@ -33,7 +34,11 @@ export const Route = createFileRoute("/_society/society/elections")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: ElectionsAdmin,
+  component: () => (
+    <FeatureGate feature="elections">
+      <ElectionsAdmin />
+    </FeatureGate>
+  ),
 });
 
 type Election = {

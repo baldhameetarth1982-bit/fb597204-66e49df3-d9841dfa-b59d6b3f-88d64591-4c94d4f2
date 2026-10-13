@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, CalendarDays, Loader2, Plus, Settings2 } from "lucide-react";
@@ -19,7 +20,11 @@ import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/amenities")({
   head: () => ({ meta: [{ title: "Amenities — SociyoHub" }, { name: "description", content: "Configure amenities, oversee bookings, and review fair access." }] }),
-  component: AdminAmenities,
+  component: () => (
+    <FeatureGate feature="amenities">
+      <AdminAmenities />
+    </FeatureGate>
+  ),
 });
 
 type FairnessRow = { flat_id: string; flat_label: string; bookings: number; cancellations: number; no_shows: number; peak_bookings: number; waitlisted: number };

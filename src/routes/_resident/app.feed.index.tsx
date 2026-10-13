@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useTranslation } from "react-i18next";
 import { localeTag } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -38,7 +39,11 @@ export const Route = createFileRoute("/_resident/app/feed/")({
       { property: "og:description", content: "Posts and conversations between residents of your society." },
     ],
   }),
-  component: FeedScreen,
+  component: () => (
+    <FeatureGate feature="community_feed">
+      <FeedScreen />
+    </FeatureGate>
+  ),
 });
 
 interface PostRow {

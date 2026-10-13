@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Clock3, Loader2, Users } from "lucide-react";
@@ -22,7 +23,11 @@ import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/_resident/app/amenities")({
   head: () => ({ meta: [{ title: "Amenities — SociyoHub" }, { name: "description", content: "Book your society amenities and review your bookings." }] }),
-  component: AmenitiesPage,
+  component: () => (
+    <FeatureGate feature="resident_amenities">
+      <AmenitiesPage />
+    </FeatureGate>
+  ),
 });
 
 const statusTone = (status: AmenityStatus) => status === "confirmed" || status === "completed" ? "success" : status === "waitlisted" ? "warning" : "muted";

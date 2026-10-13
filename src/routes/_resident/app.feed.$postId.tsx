@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useTranslation } from "react-i18next";
 import { localeTag } from "@/lib/i18n";
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
@@ -19,7 +20,11 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_resident/app/feed/$postId")({
   head: () => ({ meta: [{ title: "Post — SociyoHub" }] }),
-  component: PostThread,
+  component: () => (
+    <FeatureGate feature="community_feed">
+      <PostThread />
+    </FeatureGate>
+  ),
 });
 
 interface PostDetail {

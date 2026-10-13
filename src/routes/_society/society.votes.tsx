@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
@@ -31,7 +32,11 @@ export const Route = createFileRoute("/_society/society/votes")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: VotesAdmin,
+  component: () => (
+    <FeatureGate feature="formal_votes">
+      <VotesAdmin />
+    </FeatureGate>
+  ),
 });
 
 type Vote = { id: string; title: string; description: string | null; status: string; closes_at: string; eligibility: string; secret_ballot: boolean; frozen_at: string | null };

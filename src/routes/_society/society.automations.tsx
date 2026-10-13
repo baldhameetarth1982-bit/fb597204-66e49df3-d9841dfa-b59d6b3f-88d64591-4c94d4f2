@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +19,11 @@ import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_society/society/automations")({
   head: () => ({ meta: [{ title: "Automations — SociyoHub" }, { name: "robots", content: "noindex" }] }),
-  component: AutomationsPage,
+  component: () => (
+    <FeatureGate feature="advanced_automation">
+      <AutomationsPage />
+    </FeatureGate>
+  ),
 });
 
 const ERR: Record<string, string> = {

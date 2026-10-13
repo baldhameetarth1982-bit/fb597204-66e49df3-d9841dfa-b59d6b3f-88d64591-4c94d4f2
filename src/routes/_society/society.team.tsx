@@ -1,6 +1,7 @@
 import { RoleAccessPanel } from "@/components/roles/RoleAccessPanel";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ShieldCheck, Loader2, Plus, Crown, Building2, UserCog, ShieldAlert, EyeOff } from "lucide-react";
@@ -341,8 +342,12 @@ function AssignDialog({
     return () => clearTimeout(t);
   }, [open, search, societyId, fnCandidates]);
 
+  const { hasFeature } = useFeatureAccess();
+  // Guard logins come with the gate features (Growth and up).
   const roleOptions = ASSIGNABLE_TEAM_ROLES.filter(
-    (r) => !(r === "block_admin" && structureMode === "serial"),
+    (r) =>
+      !(r === "block_admin" && structureMode === "serial") &&
+      !(r === "security" && !hasFeature("guard_visitor_entry")),
   );
 
   const preview = capabilitiesForRole(selRole);

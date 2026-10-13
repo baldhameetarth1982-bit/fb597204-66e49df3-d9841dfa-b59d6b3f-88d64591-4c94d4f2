@@ -76,7 +76,7 @@ export function FlatLifecyclePanel({ flatId }: { flatId: string }) {
 
   if (q.isLoading) return <div className="h-40 rounded-2xl bg-muted animate-pulse" aria-label={tu("op.loading_occupancy")} />;
   if (q.error) return (
-    <Card className="rounded-2xl"><CardContent className="p-4 text-sm text-muted-foreground">
+    <Card className="rounded-2xl"><CardContent className="p-4 text-sm text-muted-foreground sm:p-4">
       {(q.error as Error).message.includes("permission") ? tu("op.you_don_t_have_permission_3") : tu("op.occupancy_could_not_be_loaded")}
     </CardContent></Card>
   );
@@ -86,7 +86,7 @@ export function FlatLifecyclePanel({ flatId }: { flatId: string }) {
 
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-4 space-y-4">
+      <CardContent className="p-4 space-y-4 sm:p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold flex items-center gap-2"><CalendarClock className="h-4 w-4 text-primary" aria-hidden />{tu("op.occupancy_lease")}</h2>
           <span className={occ.no_dues.eligible ? "text-xs text-primary" : "text-xs text-destructive"}>

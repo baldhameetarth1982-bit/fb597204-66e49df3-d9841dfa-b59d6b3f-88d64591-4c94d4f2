@@ -489,13 +489,13 @@ function IncomePage({ societyId }: { societyId: string }) {
 
       {reportQ.isError || (reportResp && reportResp.status !== "ok") ? (
         <Card>
-          <CardContent className="p-4 flex items-center gap-2 text-sm text-destructive">
+          <CardContent className="p-4 flex items-center gap-2 text-sm text-destructive sm:p-4">
             <AlertCircle className="h-4 w-4" /> {t("inc.sumFail")}
           </CardContent>
         </Card>
       ) : reportQ.isLoading || !report ? (
         <Card>
-          <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground sm:p-4">
             <Loader2 className="h-4 w-4 animate-spin" /> {t("inc.sumLoading")}
           </CardContent>
         </Card>

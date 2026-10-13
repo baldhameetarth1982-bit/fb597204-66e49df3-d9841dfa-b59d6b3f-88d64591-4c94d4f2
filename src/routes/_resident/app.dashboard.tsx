@@ -105,7 +105,7 @@ function ResidentDashboard() {
 
       {/* Dues — the most important thing for a resident. Never shows a fake ₹0. */}
       <Card className="rounded-xl bg-primary text-primary-foreground border-0 overflow-hidden">
-        <CardContent className="p-5 md:p-7" aria-busy={home.isLoading}>
+        <CardContent className="p-5 md:p-7 sm:p-5" aria-busy={home.isLoading}>
           {home.isError && !d ? (
             <div role="alert" className="space-y-3">
               <p className="font-semibold">{t("home.duesFailed")}</p>
@@ -182,7 +182,7 @@ function ResidentDashboard() {
       <QuickActions />
 
       <Card className="rounded-xl">
-        <CardContent className="p-5">
+        <CardContent className="p-5 sm:p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold">{t("home.recentNotices")}</h2>
             <Link to="/app/comm" className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline">{t("home.viewAll")} <ArrowRight className="h-4 w-4 ml-1" /></Link>

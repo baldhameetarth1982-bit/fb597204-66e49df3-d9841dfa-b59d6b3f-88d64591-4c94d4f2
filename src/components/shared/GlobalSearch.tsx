@@ -102,7 +102,7 @@ export function GlobalSearch({ societyId, scope }: { societyId: string; scope: S
               {list.map((h) => (
                 <Link key={`${kind}-${h.id}`} to={h.link} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <Card className="hover:bg-accent transition-colors">
-                    <CardContent className="p-3 min-h-11 flex items-center gap-3">
+                    <CardContent className="p-3 min-h-11 flex items-center gap-3 sm:p-3">
                       <Icon className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{h.title}</div>

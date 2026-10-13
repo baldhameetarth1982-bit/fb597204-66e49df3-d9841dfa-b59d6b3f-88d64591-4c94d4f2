@@ -38,7 +38,7 @@ function PrivacyPage() {
         </header>
 
         <Card className="rounded-2xl">
-          <CardContent className="p-6 space-y-6 text-[15px] leading-relaxed">
+          <CardContent className="p-6 space-y-6 text-[15px] leading-relaxed sm:p-6">
             <section>
               <h2 className="text-lg font-semibold mb-2">1. Overview</h2>
               <p className="text-muted-foreground">

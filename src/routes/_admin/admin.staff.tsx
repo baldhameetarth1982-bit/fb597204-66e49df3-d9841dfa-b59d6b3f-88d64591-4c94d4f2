@@ -84,7 +84,7 @@ function StaffPage() {
       <PageHeader title={tu("ln.stf.nav")} description={tu("ln.stf.desc")} />
       <div className="mx-auto grid max-w-3xl gap-5">
         <Card>
-          <CardContent className="space-y-4 p-5">
+          <CardContent className="space-y-4 p-5 sm:p-5">
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px]">
               <div>
                 <Label htmlFor="stf-email">{tu("ln.stf.email")}</Label>
@@ -120,7 +120,7 @@ function StaffPage() {
             {list.data.map((s) => (
               <li key={s.user_id}>
                 <Card>
-                  <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                  <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-4">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{s.full_name || s.email}</p>
                       <p className="truncate text-xs text-muted-foreground">{s.email}</p>

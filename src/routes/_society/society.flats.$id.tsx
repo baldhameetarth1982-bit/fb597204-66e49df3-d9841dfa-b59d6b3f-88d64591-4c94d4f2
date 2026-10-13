@@ -131,7 +131,7 @@ function CardShell({
 }) {
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-4">
+      <CardContent className="p-4 sm:p-4">
         <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
           <h3 className="text-sm font-semibold flex items-center gap-1.5">
             <Icon className="h-4 w-4" aria-hidden="true" /> {title}
@@ -154,7 +154,7 @@ function IdentityHeader({ snapshot }: { snapshot: Flat360Snapshot }) {
   const isVacant = occupancy.kind === "vacant";
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-5">
+      <CardContent className="p-5 sm:p-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="h-12 w-12 shrink-0 rounded-2xl bg-primary/10 grid place-items-center">
@@ -737,7 +737,7 @@ function FlatDetailPage() {
           </Button>
         </div>
         <Card className="rounded-2xl">
-          <CardContent className="p-6 text-center space-y-2">
+          <CardContent className="p-6 text-center space-y-2 sm:p-6">
             <div className="h-12 w-12 mx-auto rounded-2xl bg-muted grid place-items-center">
               {isAuth ? (
                 <Lock className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
@@ -815,7 +815,7 @@ function FlatDetailPage() {
           <>
             <UpgradePrompt feature="flat_360" currentPlan={snapshot.viewer.plan} />
             <Card className="rounded-2xl border-dashed">
-              <CardContent className="p-4">
+              <CardContent className="p-4 sm:p-4">
                 <div className="flex items-start gap-3">
                   <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
                     <Sparkles className="h-4 w-4" aria-hidden="true" />

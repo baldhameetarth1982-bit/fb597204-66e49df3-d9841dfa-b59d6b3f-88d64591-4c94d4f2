@@ -67,7 +67,7 @@ function ServicesScreen() {
       {isGuard && (
         <Link to="/app/guard" className="block active:scale-[0.99] transition-transform">
           <Card className="rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0">
-            <CardContent className="p-4 flex items-center gap-4">
+            <CardContent className="p-4 flex items-center gap-4 sm:p-4">
               <div className="h-12 w-12 rounded-2xl bg-white/20 grid place-items-center">
                 <ScanLine className="h-6 w-6" />
               </div>
@@ -84,7 +84,7 @@ function ServicesScreen() {
       <section className="space-y-3">
         <Link to="/app/visitors" className="block active:scale-[0.99] transition-transform">
           <Card className="rounded-2xl">
-            <CardContent className="p-4 flex items-center gap-4">
+            <CardContent className="p-4 flex items-center gap-4 sm:p-4">
               <div className="h-12 w-12 rounded-2xl grid place-items-center bg-primary/10 text-primary"><Shield className="h-6 w-6" /></div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">{t("sv.gate")}</p>
@@ -98,7 +98,7 @@ function ServicesScreen() {
         {primary.map(({ to, title, desc, icon: Icon, accent }) => (
           <Link key={to} to={to} className="block active:scale-[0.99] transition-transform">
             <Card className="rounded-2xl">
-              <CardContent className="p-4 flex items-center gap-4">
+              <CardContent className="p-4 flex items-center gap-4 sm:p-4">
                 <div className={`h-12 w-12 rounded-2xl grid place-items-center ${accent}`}>
                   <Icon className="h-6 w-6" />
                 </div>

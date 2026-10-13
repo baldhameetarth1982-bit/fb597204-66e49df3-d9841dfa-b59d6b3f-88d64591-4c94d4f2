@@ -38,7 +38,7 @@ function ContactPage() {
         </header>
 
         <Card className="rounded-2xl">
-          <CardContent className="p-6 space-y-5">
+          <CardContent className="p-6 space-y-5 sm:p-6">
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Grievance Officer</p>
               <p className="text-lg font-semibold mt-1">SociyoHub Support Team</p>
@@ -80,7 +80,7 @@ function ContactPage() {
         </Card>
 
         <Card className="rounded-2xl">
-          <CardContent className="p-6 text-sm text-muted-foreground leading-relaxed">
+          <CardContent className="p-6 text-sm text-muted-foreground leading-relaxed sm:p-6">
             <p>
               For payment disputes, please include your payment reference ID and a
               screenshot of the debit. For account or data-privacy requests, email us from your registered account.

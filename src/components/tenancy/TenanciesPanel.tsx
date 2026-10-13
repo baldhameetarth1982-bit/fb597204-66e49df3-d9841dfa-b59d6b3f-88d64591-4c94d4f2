@@ -36,7 +36,7 @@ export function TenanciesPanel({ societyId }: { societyId: string }) {
 
   return (
     <Card className="rounded-2xl mb-4">
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-4 space-y-3 sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">{tu("op.tenancies")}</h2>
           <div role="tablist" className="flex gap-1 rounded-xl bg-muted p-1">

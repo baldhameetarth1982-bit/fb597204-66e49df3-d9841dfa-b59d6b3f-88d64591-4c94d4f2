@@ -48,7 +48,7 @@ export function RefundNeededCard({ societyId }: { societyId: string }) {
 
   return (
     <Card className="mb-4">
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-4 space-y-3 sm:p-4">
         <div>
           <h2 className="font-semibold">{tu("op.online_payments_needing_a_refund")}</h2>
           <p className="text-sm text-muted-foreground">

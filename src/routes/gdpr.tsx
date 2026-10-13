@@ -34,7 +34,7 @@ function GdprPage() {
         </div>
       </header>
 
-      <Card className="rounded-2xl"><CardContent className="p-6 space-y-6 text-[15px] leading-relaxed">
+      <Card className="rounded-2xl"><CardContent className="p-6 space-y-6 text-[15px] leading-relaxed sm:p-6">
         <section>
           <h2 className="text-lg font-semibold mb-2">Retention periods</h2>
           <ul className="list-disc pl-6 mt-2 space-y-1 text-muted-foreground">

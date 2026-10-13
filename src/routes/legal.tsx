@@ -42,7 +42,7 @@ function LegalCenter() {
           {cards.map((c) => (
             <Link key={c.to} to={c.to} className="group">
               <Card className="rounded-2xl h-full transition hover:border-primary/50">
-                <CardContent className="p-5 flex items-start gap-3">
+                <CardContent className="p-5 flex items-start gap-3 sm:p-5">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
                     <c.icon className="h-5 w-5" />
                   </div>
@@ -57,7 +57,7 @@ function LegalCenter() {
         </div>
 
         <Card className="mt-6 rounded-2xl">
-          <CardContent className="p-5 text-sm text-muted-foreground leading-relaxed">
+          <CardContent className="p-5 text-sm text-muted-foreground leading-relaxed sm:p-5">
             <p>
               SociyoHub is a Software-as-a-Service platform used by housing societies to manage residents, maintenance
               dues, notices, visitors and community activity. SociyoHub is <strong>not</strong> the society administration —

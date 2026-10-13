@@ -175,7 +175,7 @@ function CommunicationCenter() {
           ) : (
             filteredNotices.map((n: any) => (
               <Card key={n.id} className="rounded-2xl">
-                <CardContent className="p-4">
+                <CardContent className="p-4 sm:p-4">
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm whitespace-pre-line">{(n.body ?? "").slice(0, 240)}</p>
@@ -204,7 +204,7 @@ function CommunicationCenter() {
             <>
               {filteredComplaints.map((c: any) => (
                 <Card key={c.id} className="rounded-2xl">
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 sm:p-4">
                     <div className="flex items-center gap-2">
                       <p className="flex-1 min-w-0 truncate font-medium text-sm">{c.subject}</p>
                       <Badge variant="outline" className="rounded-full text-[10px]">
@@ -226,7 +226,7 @@ function CommunicationCenter() {
 
         <TabsContent value="documents" className="mt-4">
           <Card className="rounded-2xl">
-            <CardContent className="p-5 text-center">
+            <CardContent className="p-5 text-center sm:p-5">
               <FileText className="h-8 w-8 mx-auto text-muted-foreground opacity-60" />
               <p className="mt-2 font-medium">{t("comm.docsTitle")}</p>
               <p className="text-xs text-muted-foreground">{t("comm.docsDesc")}</p>
@@ -263,7 +263,7 @@ function CommunicationCenter() {
                 <div className="space-y-2">
                   {list.map((c: any) => (
                     <Card key={c.id} className="rounded-2xl">
-                      <CardContent className="p-4 flex items-center gap-3">
+                      <CardContent className="p-4 flex items-center gap-3 sm:p-4">
                         <div className="h-10 w-10 rounded-full bg-primary/10 grid place-items-center shrink-0">
                           <Phone className="h-4 w-4 text-primary" />
                         </div>
@@ -294,7 +294,7 @@ function EmptyBlock({
 }: { icon: any; title: string; description: string; action?: React.ReactNode }) {
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-8 text-center">
+      <CardContent className="p-8 text-center sm:p-8">
         <Icon className="h-8 w-8 mx-auto text-muted-foreground opacity-60" />
         <p className="mt-2 font-semibold">{title}</p>
         <p className="text-xs text-muted-foreground mt-1">{description}</p>

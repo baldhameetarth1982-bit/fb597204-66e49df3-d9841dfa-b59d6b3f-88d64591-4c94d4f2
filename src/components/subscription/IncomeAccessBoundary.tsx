@@ -123,7 +123,7 @@ export function IncomeAccessBoundary({ children }: Props) {
         data-testid="income-access-role-denied"
         className="rounded-3xl border border-destructive/20"
       >
-        <CardContent className="p-6 flex items-start gap-3">
+        <CardContent className="p-6 flex items-start gap-3 sm:p-6">
           <ShieldAlert className="h-5 w-5 text-destructive shrink-0" />
           <div className="text-sm">
             <div className="font-medium">{tu("op.not_available_for_your_role")}</div>

@@ -85,7 +85,7 @@ export function GuardSessionGate({ children, isAdmin }: { children: ReactNode; i
   // Keep working on a known-active session during brief network loss; the server rechecks every action.
   if (q.isLoading) return <div className="py-16 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" aria-label={t("gs.checking")} /></div>;
   if (q.isError && !q.data) return (
-    <Card className="rounded-2xl mx-4 my-6"><CardContent className="p-4 space-y-3">
+    <Card className="rounded-2xl mx-4 my-6"><CardContent className="p-4 space-y-3 sm:p-4">
       <p className="text-sm">{t("gs.checkFailed")} {gateErrorMessage(q.error)}</p>
       <Button className="h-11 rounded-xl" onClick={() => q.refetch()}>{t("common.retry")}</Button>
     </CardContent></Card>
@@ -107,7 +107,7 @@ export function GuardSessionGate({ children, isAdmin }: { children: ReactNode; i
   const needsQr = s.state === "revoked" || s.state === "blocked" || !!s.needs_qr;
   return (
     <div className="px-4 py-8 max-w-md mx-auto space-y-4">
-      <Card className="rounded-2xl"><CardContent className="p-5 space-y-4">
+      <Card className="rounded-2xl"><CardContent className="p-5 space-y-4 sm:p-5">
         <div className="flex items-start gap-3">
           {needsQr ? <ShieldOff className="h-6 w-6 text-destructive shrink-0" /> : <QrCode className="h-6 w-6 text-primary shrink-0" />}
           <div>

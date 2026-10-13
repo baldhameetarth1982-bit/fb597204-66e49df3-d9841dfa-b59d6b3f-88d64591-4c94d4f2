@@ -250,7 +250,7 @@ function BlocksPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {blocks.map((b) => (
             <Card key={b.id} className="rounded-2xl hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
+              <CardContent className="p-6 sm:p-6">
                 <div className="flex items-start justify-between">
                   <div className="h-12 w-12 rounded-xl bg-primary/10 grid place-items-center">
                     <Building2 className="h-6 w-6 text-primary" />

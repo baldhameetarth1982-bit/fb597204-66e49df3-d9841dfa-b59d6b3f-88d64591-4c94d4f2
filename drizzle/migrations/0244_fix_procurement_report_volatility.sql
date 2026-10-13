@@ -1,0 +1,1 @@
+ALTER FUNCTION public.get_procurement_report(integer) VOLATILE;

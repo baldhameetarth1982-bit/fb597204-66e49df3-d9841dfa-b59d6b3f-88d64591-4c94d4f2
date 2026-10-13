@@ -25,7 +25,7 @@ export function LockedFeatureCard({ feature, message, href = "/society/plan-requ
   return (
     <Link to={href as any} className="block">
       <Card className="rounded-2xl border-dashed border-primary/30 bg-muted/20 hover:bg-primary/5 transition">
-        <CardContent className="p-4 flex items-start gap-3">
+        <CardContent className="p-4 flex items-start gap-3 sm:p-4">
           <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
             <Lock className="h-4 w-4" />
           </div>

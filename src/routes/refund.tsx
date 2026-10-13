@@ -37,7 +37,7 @@ function RefundPage() {
           </div>
         </header>
 
-        <Card className="rounded-2xl"><CardContent className="p-6 space-y-6 text-[15px] leading-relaxed">
+        <Card className="rounded-2xl"><CardContent className="p-6 space-y-6 text-[15px] leading-relaxed sm:p-6">
           <section>
             <h2 className="text-lg font-semibold mb-2">1. Society maintenance payments</h2>
             <p className="text-muted-foreground">

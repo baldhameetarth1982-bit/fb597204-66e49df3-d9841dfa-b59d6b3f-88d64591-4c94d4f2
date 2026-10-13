@@ -191,7 +191,7 @@ function GuardDashboard() {
       <OfflineQueuePanel onSynced={refresh} />
 
       <Card className="rounded-2xl border-primary/30 bg-primary/5">
-        <CardContent className="p-4 space-y-2">
+        <CardContent className="p-4 space-y-2 sm:p-4">
           <Label htmlFor="gate-code" className="flex items-center gap-2 text-sm font-semibold">
             <KeyRound className="h-4 w-4 text-primary" /> {t("gd.passCode")}
           </Label>
@@ -259,12 +259,12 @@ function GuardDashboard() {
       {list.isLoading ? (
         <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}</div>
       ) : list.isError && rows.length === 0 ? (
-        <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3">
+        <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3 sm:p-6">
           <p className="text-sm">{gateErrorMessage(list.error)}</p>
           <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => list.refetch()}>{t("common.retry")}</Button>
         </CardContent></Card>
       ) : rows.length === 0 ? (
-        <Card className="rounded-2xl"><CardContent className="p-6 text-center text-sm text-muted-foreground">
+        <Card className="rounded-2xl"><CardContent className="p-6 text-center text-sm text-muted-foreground sm:p-6">
           {dq ? t("gd.noMatch") : scope === "inside" ? t("gd.noneInside") : scope === "overstay" ? t("gd.noneOverstay") : scope === "expected" ? t("gd.noneExpected") : t("gd.noneToday")}
         </CardContent></Card>
       ) : (
@@ -280,7 +280,7 @@ function GuardDashboard() {
             return (
               <li key={v.id}>
                 <Card className="rounded-2xl">
-                  <CardContent className="p-4 space-y-3">
+                  <CardContent className="p-4 space-y-3 sm:p-4">
                     <div className="flex items-start gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">

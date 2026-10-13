@@ -58,7 +58,7 @@ function Group({ title, icon: Icon, list }: { title: string; icon: any; list: Co
       <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide"><Icon className="h-4 w-4" /> {title}</div>
       {list.map((c) => (
         <Card key={c.id} className="rounded-2xl">
-          <CardContent className="p-4 flex items-center gap-3">
+          <CardContent className="p-4 flex items-center gap-3 sm:p-4">
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground">{c.role_label}</p>
               <p className="font-semibold truncate">{c.name}</p>

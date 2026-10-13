@@ -173,7 +173,7 @@ function VehiclesPage() {
         </div>
       ) : list.length === 0 ? (
         <Card className="rounded-2xl">
-          <CardContent className="p-8 text-center text-sm text-muted-foreground">
+          <CardContent className="p-8 text-center text-sm text-muted-foreground sm:p-8">
             {t("vh.none")}
           </CardContent>
         </Card>
@@ -181,7 +181,7 @@ function VehiclesPage() {
         <div className="space-y-2">
           {list.map((v) => (
             <Card key={v.id} className="rounded-2xl">
-              <CardContent className="p-4 flex items-center gap-3">
+              <CardContent className="p-4 flex items-center gap-3 sm:p-4">
                 <div className="h-11 w-11 rounded-2xl bg-primary/10 grid place-items-center text-primary">
                   <Car className="h-5 w-5" />
                 </div>
@@ -225,7 +225,7 @@ function MyParking() {
   if (rows === null) return <div className="h-16 rounded-2xl bg-muted animate-pulse" />;
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-4 space-y-3 sm:p-4">
         <p className="text-sm font-semibold">{t("vh.parking")}</p>
         {failed ? (
           <p role="alert" className="text-sm text-muted-foreground">{t("vh.parkingFailed")}</p>

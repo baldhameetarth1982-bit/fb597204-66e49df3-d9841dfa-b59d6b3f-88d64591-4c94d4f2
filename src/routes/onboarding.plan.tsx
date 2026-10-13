@@ -15,6 +15,7 @@ import { getApplicablePlans, startSocietyTrial, getPricingSettings } from "@/lib
 import { tu } from "@/lib/i18n";
 import { PlanFeatureList, isPlanKey } from "@/components/subscription/PlanFeatureList";
 import { readIntendedPlan } from "@/lib/intended-plan";
+import { termPricePerFlat, termFullPricePerFlat } from "@/lib/plan-term-price";
 
 export const Route = createFileRoute("/onboarding/plan")({
   head: () => ({ meta: [{ title: "Choose your plan — SociyoHub" }] }),
@@ -199,10 +200,19 @@ function PlanGate() {
                       <Icon className="h-5 w-5 text-primary" />
                       <h3 className="text-xl font-semibold tracking-tight">{p.plan_name}</h3>
                     </div>
-                    <div className="mt-3 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold">₹{p.price_per_flat_inr ?? 0}</span>
-                      <span className="text-muted-foreground text-sm">/ flat / month</span>
-                    </div>
+                    {(() => {
+                      const term = (intended?.term ?? 1) as 1 | 3 | 12;
+                      const monthly = Number(p.price_per_flat_inr ?? 0);
+                      const full = termFullPricePerFlat(monthly, term);
+                      const net = termPricePerFlat(monthly, term);
+                      return (
+                        <div className="mt-3 flex flex-wrap items-baseline gap-1">
+                          {net < full && <span className="text-lg text-muted-foreground line-through tabular-nums" aria-label={`was ₹${full}`}>₹{full}</span>}
+                          <span className="text-4xl font-bold tabular-nums">₹{net}</span>
+                          <span className="text-muted-foreground text-sm">/ flat / {term === 1 ? "month" : term === 3 ? "quarter" : "year"}</span>
+                        </div>
+                      );
+                    })()}
                     {isPlanKey(p.plan_id) ? (
                       <PlanFeatureList plan={p.plan_id} className="mt-4 flex-1" />
                     ) : (

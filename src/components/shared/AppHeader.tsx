@@ -93,7 +93,7 @@ export function AppHeader({
 
         <div className="ms-auto flex items-center gap-1 md:gap-2">
           {viewSwitch && (
-            <Button asChild variant="outline" size="sm" className="h-10 rounded-full px-3 gap-1.5 border-border bg-background text-foreground hover:bg-secondary">
+            <Button asChild variant="outline" size="sm" className="h-10 rounded-full px-3 gap-1.5 border-border bg-background text-foreground hover:bg-secondary hover:text-foreground">
               <Link to={viewSwitch.to as any} aria-label={viewSwitch.label}>
                 <viewSwitch.Icon className="h-4 w-4" aria-hidden />
                 <span className="max-[340px]:sr-only">{viewSwitch.label}</span>

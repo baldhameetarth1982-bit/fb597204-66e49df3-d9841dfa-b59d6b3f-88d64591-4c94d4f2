@@ -1695,6 +1695,13 @@
       "when": 1791863645342,
       "tag": "0241_saas_term_whole_rupee_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 242,
+      "version": "7",
+      "when": 1791865147489,
+      "tag": "0242_server_plan_gates_and_admin_step_checks",
+      "breakpoints": true
     }
   ]
 }

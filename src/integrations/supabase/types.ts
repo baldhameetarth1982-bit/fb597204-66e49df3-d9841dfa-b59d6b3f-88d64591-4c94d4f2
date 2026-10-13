@@ -13128,6 +13128,7 @@ export type Database = {
         }[]
       }
       _norm_plate: { Args: { _p: string }; Returns: string }
+      _norm_society_key: { Args: { _t: string }; Returns: string }
       _notice_admin_society: { Args: never; Returns: string }
       _notice_audience: {
         Args: { _n: Database["public"]["Tables"]["notices"]["Row"] }
@@ -13271,6 +13272,7 @@ export type Database = {
         }
         Returns: string
       }
+      _phone_key: { Args: { _p: string }; Returns: string }
       _proc_att_state_ok: {
         Args: { _kind: string; _status: string }
         Returns: boolean

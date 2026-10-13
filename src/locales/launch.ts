@@ -373,4 +373,7 @@ export const launch = {
   "ln.exp.trialLast": ["Your SociyoHub free trial ends in", "आपका SociyoHub मुफ़्त ट्रायल खत्म होने में बाकी", "તમારી SociyoHub મફત ટ્રાયલ પૂરી થવામાં બાકી"],
   "ln.exp.body": ["Renew now so billing, notices and the help desk keep working. Paying early never loses days.", "अभी रिन्यू करें ताकि बिलिंग, नोटिस और हेल्प डेस्क चलते रहें। जल्दी भुगतान से कोई दिन नहीं घटता।", "હમણાં રિન્યૂ કરો જેથી બિલિંગ, નોટિસ અને હેલ્પ ડેસ્ક ચાલુ રહે. વહેલી ચુકવણીથી કોઈ દિવસ ઘટતો નથી."],
   "ln.exp.renew": ["Renew now", "अभी रिन्यू करें", "હમણાં રિન્યૂ કરો"],
+  "ln.ob.dupPhone": ["This phone number already runs a society on SociyoHub. One number can run only one society.", "यह फ़ोन नंबर पहले से SociyoHub पर एक सोसाइटी चला रहा है। एक नंबर से केवल एक सोसाइटी चल सकती है।", "આ ફોન નંબર પહેલેથી SociyoHub પર એક સોસાયટી ચલાવે છે. એક નંબરથી ફક્ત એક જ સોસાયટી ચાલી શકે."],
+  "ln.ob.dupSociety": ["A society with this name is already registered at this address. Ask its committee for the joining code instead.", "इस नाम की सोसाइटी इस पते पर पहले से रजिस्टर्ड है। इसकी बजाय उसकी कमेटी से जॉइनिंग कोड मांगें।", "આ નામની સોસાયટી આ સરનામે પહેલેથી નોંધાયેલી છે. તેના બદલે તેની કમિટી પાસેથી જોડાવાનો કોડ માગો."],
+  "ln.ob.trialBadge": ["Free for 30 days — every Pro feature, no payment needed to start", "30 दिन मुफ़्त — हर Pro सुविधा, शुरू करने के लिए कोई भुगतान नहीं", "30 દિવસ મફત — દરેક Pro સુવિધા, શરૂ કરવા કોઈ ચુકવણી નહીં"],
 } satisfies Catalog;

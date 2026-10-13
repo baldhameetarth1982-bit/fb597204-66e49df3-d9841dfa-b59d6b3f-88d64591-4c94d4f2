@@ -1,4 +1,5 @@
-import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ function CreateSocietyWizardPage() {
   const [initialState, setInitialState] = useState<Partial<WizardState> | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [phoneVerified, setPhoneVerified] = useState<boolean | null>(null);
+  const [blocked, setBlocked] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -79,6 +81,8 @@ function CreateSocietyWizardPage() {
           const msg = e instanceof Error ? e.message : "";
           if (msg.includes("PHONE_VERIFICATION_REQUIRED")) {
             setPhoneVerified(false);
+          } else if (msg.includes("PHONE_ALREADY_HAS_SOCIETY")) {
+            setBlocked(tu("ln.ob.dupPhone"));
           } else {
             toast.error(tu("op.could_not_start_setup_your"));
           }
@@ -124,6 +128,16 @@ function CreateSocietyWizardPage() {
       </div>
     );
   }
+  if (blocked) {
+    return (
+      <div className="min-h-dvh grid place-items-center bg-secondary/40 p-4">
+        <div role="alert" className="w-full max-w-md rounded-2xl border border-border bg-background p-6 text-center space-y-4 shadow-sm">
+          <p className="text-sm">{blocked}</p>
+          <Button asChild variant="outline" className="min-h-11"><Link to="/onboarding" search={{ ref: undefined }}>{tu("common.back")}</Link></Button>
+        </div>
+      </div>
+    );
+  }
   if (!societyId) {
     return (
       <div className="min-h-dvh grid place-items-center text-muted-foreground p-6 text-center">
@@ -142,6 +156,7 @@ function CreateSocietyWizardPage() {
       finishLabel="Finish setup"
       onComplete={async (state) => {
         // Build payload — flatten unit code/name/floor fields for the RPC
+        try {
         await commitSocietyWizard(societyId, {
           info: state.info,
           layout: state.layout,
@@ -160,6 +175,11 @@ function CreateSocietyWizardPage() {
           dynamic_fields: state.dynamic_fields,
           financial_year_label: state.financial_year_label,
         });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "";
+          if (msg.includes("DUPLICATE_SOCIETY")) throw new Error(tu("ln.ob.dupSociety"));
+          throw e;
+        }
         toast.success(tu("op.society_setup_complete"));
         navigate({ to: "/onboarding/plan" });
       }}

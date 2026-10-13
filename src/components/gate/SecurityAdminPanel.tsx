@@ -32,7 +32,7 @@ export function SecurityAdminPanel({ societyId, onChanged }: { societyId: string
         ))}
       </div>
       {tab === "review" && <ReviewList societyId={societyId} onChanged={onChanged} />}
-      {tab === "guards" && <GuardsAdmin />}
+      {tab === "guards" && <GuardsAdmin societyId={societyId} />}
       {tab === "patrol" && <PatrolAdmin />}
       {tab === "restricted" && <RestrictedList societyId={societyId} />}
       {tab === "incidents" && <IncidentList societyId={societyId} />}

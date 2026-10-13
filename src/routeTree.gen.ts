@@ -43,6 +43,7 @@ import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
 import { Route as OnboardingChoosePlanRouteImport } from './routes/onboarding.choose-plan'
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create'
+import { Route as OnboardingGuardRouteImport } from './routes/onboarding.guard'
 import { Route as OnboardingJoinRouteImport } from './routes/onboarding.join'
 import { Route as OnboardingPendingRouteImport } from './routes/onboarding.pending'
 import { Route as OnboardingPlanRouteImport } from './routes/onboarding.plan'
@@ -392,6 +393,11 @@ const OnboardingChoosePlanRoute = OnboardingChoosePlanRouteImport.update({
 const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
   id: '/create',
   path: '/create',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingGuardRoute = OnboardingGuardRouteImport.update({
+  id: '/guard',
+  path: '/guard',
   getParentRoute: () => OnboardingRoute,
 } as any)
 const OnboardingJoinRoute = OnboardingJoinRouteImport.update({
@@ -1377,6 +1383,7 @@ export interface FileRoutesByFullPath {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
+  '/onboarding/guard': typeof OnboardingGuardRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
@@ -1589,6 +1596,7 @@ export interface FileRoutesByTo {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
+  '/onboarding/guard': typeof OnboardingGuardRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
@@ -1807,6 +1815,7 @@ export interface FileRoutesById {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/onboarding/choose-plan': typeof OnboardingChoosePlanRoute
   '/onboarding/create': typeof OnboardingCreateRoute
+  '/onboarding/guard': typeof OnboardingGuardRoute
   '/onboarding/join': typeof OnboardingJoinRoute
   '/onboarding/pending': typeof OnboardingPendingRoute
   '/onboarding/plan': typeof OnboardingPlanRoute
@@ -2022,6 +2031,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/onboarding/choose-plan'
     | '/onboarding/create'
+    | '/onboarding/guard'
     | '/onboarding/join'
     | '/onboarding/pending'
     | '/onboarding/plan'
@@ -2234,6 +2244,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/onboarding/choose-plan'
     | '/onboarding/create'
+    | '/onboarding/guard'
     | '/onboarding/join'
     | '/onboarding/pending'
     | '/onboarding/plan'
@@ -2451,6 +2462,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/onboarding/choose-plan'
     | '/onboarding/create'
+    | '/onboarding/guard'
     | '/onboarding/join'
     | '/onboarding/pending'
     | '/onboarding/plan'
@@ -2918,6 +2930,13 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/onboarding/create'
       preLoaderRoute: typeof OnboardingCreateRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/guard': {
+      id: '/onboarding/guard'
+      path: '/guard'
+      fullPath: '/onboarding/guard'
+      preLoaderRoute: typeof OnboardingGuardRouteImport
       parentRoute: typeof OnboardingRoute
     }
     '/onboarding/join': {
@@ -4562,6 +4581,7 @@ const SocietyRouteWithChildren =
 interface OnboardingRouteChildren {
   OnboardingChoosePlanRoute: typeof OnboardingChoosePlanRoute
   OnboardingCreateRoute: typeof OnboardingCreateRoute
+  OnboardingGuardRoute: typeof OnboardingGuardRoute
   OnboardingJoinRoute: typeof OnboardingJoinRoute
   OnboardingPendingRoute: typeof OnboardingPendingRoute
   OnboardingPlanRoute: typeof OnboardingPlanRoute
@@ -4571,6 +4591,7 @@ interface OnboardingRouteChildren {
 const OnboardingRouteChildren: OnboardingRouteChildren = {
   OnboardingChoosePlanRoute: OnboardingChoosePlanRoute,
   OnboardingCreateRoute: OnboardingCreateRoute,
+  OnboardingGuardRoute: OnboardingGuardRoute,
   OnboardingJoinRoute: OnboardingJoinRoute,
   OnboardingPendingRoute: OnboardingPendingRoute,
   OnboardingPlanRoute: OnboardingPlanRoute,

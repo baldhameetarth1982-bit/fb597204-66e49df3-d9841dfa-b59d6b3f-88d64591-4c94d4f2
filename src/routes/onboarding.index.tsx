@@ -1,7 +1,7 @@
 import { PendingRoleInvites } from "@/components/roles/PendingRoleInvites";
 import { Link, Navigate, createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Building2, ArrowRight, Loader2 } from "lucide-react";
+import { Building2, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { ROLE_HOME } from "@/config/roles";
@@ -19,19 +19,19 @@ function OnboardingChoice() {
   const { ref } = useSearch({ from: "/onboarding/" });
   const [pendingChecked, setPendingChecked] = useState(false);
   const [hasPending, setHasPending] = useState(false);
+  const [hasGuardPending, setHasGuardPending] = useState(false);
 
   useEffect(() => { if (ref) localStorage.setItem("sociohub:ref", ref); }, [ref]);
 
   useEffect(() => {
     if (!profile?.id || profile.society_id) { setPendingChecked(true); return; }
     (async () => {
-      const { data } = await supabase
-        .from("join_requests" as any)
-        .select("id")
-        .eq("user_id", profile.id)
-        .eq("status", "pending")
-        .maybeSingle();
-      setHasPending(!!data);
+      const [res, guard] = await Promise.all([
+        supabase.from("join_requests" as any).select("id").eq("user_id", profile.id).eq("status", "pending").maybeSingle(),
+        supabase.from("guard_join_requests").select("id").eq("user_id", profile.id).eq("status", "pending").maybeSingle(),
+      ]);
+      setHasPending(!!res.data);
+      setHasGuardPending(!!guard.data);
       setPendingChecked(true);
     })();
   }, [profile?.id, profile?.society_id]);
@@ -47,6 +47,7 @@ function OnboardingChoice() {
     return <Navigate to={ROLE_HOME[primaryRole]} replace />;
   }
   if (hasPending) return <Navigate to="/onboarding/pending" replace />;
+  if (hasGuardPending) return <Navigate to="/onboarding/guard" replace />;
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
 
   return (
@@ -98,6 +99,23 @@ function OnboardingChoice() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {tu("op.enter_an_invite_code_from")}
                 </p>
+                <span className="mt-3 inline-flex items-center text-sm font-medium text-primary">
+                  {tu("otp.enter")} <ArrowRight className="h-4 w-4 ml-1" />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/onboarding/guard" className="block group">
+          <Card className="rounded-3xl border border-border shadow-sm bg-background transition-transform group-active:scale-[0.98]">
+            <CardContent className="p-6 flex items-start gap-4 sm:p-6">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 grid place-items-center text-primary">
+                <ShieldCheck className="h-7 w-7" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-foreground">{tu("ln.gj.cardTitle")}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{tu("ln.gj.cardBody")}</p>
                 <span className="mt-3 inline-flex items-center text-sm font-medium text-primary">
                   {tu("otp.enter")} <ArrowRight className="h-4 w-4 ml-1" />
                 </span>

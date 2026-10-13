@@ -65,5 +65,6 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Block duplicate society: same name + same address, or one phone creating a second society
 - [x] Phone required for every role (resident, admin, block admin, guard); age chosen at sign-up
 - [x] Society admin "Switch to resident" option
-- [ ] Post-login choice: Create society / Join as resident / Join as guard (by code, admin approves)
-- [ ] Guard shifts: admin sets weekdays + hours; guard panel blocked outside them by server time; SOS still works
+- [x] Post-login choice: Create society / Join as resident / Join as guard (by code, admin approves)
+- [x] Guard shifts: admin sets weekdays + hours; guard panel blocked outside them by server time; SOS still works
+- [ ] Guard join + shift flow signed in end-to-end — blocked: needs a separate test guard account with its own phone

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, KeyRound, Loader2, Plus, QrCode, ShieldOff, Trash2 } from "lucide-react";
+import { Clock, Copy, KeyRound, Loader2, Plus, QrCode, ShieldOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { fmtTime, gateErrorMessage } from "@/lib/visitors";
 import { ReasonSheet } from "./GateOps";
-import { tu } from "@/lib/i18n";
+import i18n, { tu } from "@/lib/i18n";
+import { shiftSummary } from "@/lib/guard-shift";
+import { GuardJoinRequests, ShiftSheet, saveGuardShift, useGuardShifts } from "./GuardShiftAdmin";
 
 const Err = ({ e, retry }: { e: unknown; retry: () => void }) => (
   <p className="text-sm text-destructive" role="alert">{gateErrorMessage(e)} <button className="underline min-h-11" onClick={retry}>{tu("common.retry")}</button></p>
@@ -23,11 +25,14 @@ const Spin = () => <Loader2 className="h-5 w-5 animate-spin mx-auto" aria-label=
 
 /* ---------- Guards ---------- */
 interface GuardRow { user_id: string; full_name: string | null; phone_last4: string | null; active_session_id: string | null; started_at: string | null; last_seen_at: string | null; expires_at: string | null; method: string | null; device_label: string | null; blocked: boolean }
-export function GuardsAdmin() {
+export function GuardsAdmin({ societyId }: { societyId: string }) {
   const qc = useQueryClient();
   const [revoke, setRevoke] = useState<GuardRow | null>(null);
   const [qr, setQr] = useState<{ guard: GuardRow; token: string; expires_at: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [shiftFor, setShiftFor] = useState<GuardRow | null>(null);
+  const [shiftBusy, setShiftBusy] = useState(false);
+  const shifts = useGuardShifts(societyId);
   const q = useQuery({
     queryKey: ["admin-guards"],
     refetchInterval: 30_000,
@@ -51,10 +56,13 @@ export function GuardsAdmin() {
   const link = qr ? `${window.location.origin}/app/guard?entry=${encodeURIComponent(qr.token)}` : "";
   return (
     <div className="space-y-2">
+      <GuardJoinRequests />
       <p className="text-sm text-muted-foreground">{tu("op.guards_can_act_at_the")}</p>
       {!q.data?.length ? <p className="text-sm text-muted-foreground text-center py-4">{tu("op.no_guards_yet_add_one")}</p> : (
         <ul className="space-y-2">
-          {q.data.map((g) => (
+          {q.data.map((g) => {
+            const sh = shifts.data?.get(g.user_id);
+            return (
             <li key={g.user_id} className="rounded-2xl border p-3 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="font-medium">{g.full_name ?? tu("op.guard")}{g.phone_last4 ? ` · ••${g.phone_last4}` : ""}</p>
@@ -63,14 +71,27 @@ export function GuardsAdmin() {
                 </span>
               </div>
               {g.active_session_id && <p className="text-xs text-muted-foreground">{g.device_label ?? tu("op.device")} · started {fmtTime(g.started_at)} · seen {fmtTime(g.last_seen_at)} · via {g.method === "qr" ? "QR" : tu("op.sign_in")}</p>}
-              <div className="flex gap-2">
+              <p className="text-xs text-muted-foreground">{sh ? shiftSummary(sh) : tu("ln.sh.anytime")}</p>
+              <div className="flex gap-2 flex-wrap">
                 <Button size="sm" variant="outline" className="min-h-11" disabled={busy === g.user_id} onClick={() => issue(g)}><QrCode className="h-4 w-4 mr-1" />{tu("op.shift_qr")}</Button>
+                <Button size="sm" variant="outline" className="min-h-11" onClick={() => setShiftFor(g)}><Clock className="h-4 w-4 mr-1" />{tu("ln.sh.edit")}</Button>
                 <Button size="sm" variant="outline" className="min-h-11 text-destructive" onClick={() => setRevoke(g)}><ShieldOff className="h-4 w-4 mr-1" />{tu("common.signOut")}</Button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
+      <ShiftSheet open={!!shiftFor} busy={shiftBusy} initial={shiftFor ? shifts.data?.get(shiftFor.user_id) ?? null : null}
+        title={i18n.t("ln.sh.setTitle", { name: shiftFor?.full_name ?? tu("op.guard") }) as string}
+        onClose={() => setShiftFor(null)}
+        onSave={async (s) => {
+          if (!shiftFor) return;
+          setShiftBusy(true);
+          const ok = await saveGuardShift(shiftFor.user_id, s);
+          setShiftBusy(false);
+          if (ok) { setShiftFor(null); qc.invalidateQueries({ queryKey: ["guard-shifts"] }); }
+        }} />
       <ReasonSheet title={`Sign out ${revoke?.full_name ?? "guard"}`} hint={tu("op.ends_their_gate_access_on")} min={5}
         open={!!revoke} onOpenChange={(o) => !o && setRevoke(null)}
         onSubmit={async (reason) => {

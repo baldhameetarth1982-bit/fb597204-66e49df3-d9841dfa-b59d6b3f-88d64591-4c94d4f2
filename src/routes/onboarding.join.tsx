@@ -15,6 +15,7 @@ import { OnboardingStepper } from "@/components/system/OnboardingStepper";
 import { searchSocietiesPublic, getJoinStructure, submitJoinRequestForUnit, type JoinStructure } from "@/lib/onboarding.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { tu } from "@/lib/i18n";
+import { guardShiftError } from "@/lib/guard-shift";
 
 export const Route = createFileRoute("/onboarding/join")({
   head: () => ({ meta: [{ title: "Join society — SociyoHub" }] }),
@@ -142,7 +143,7 @@ function JoinFlow() {
       toast.success(tu("nd.submitted"));
       navigate({ to: "/onboarding/pending" });
     } catch (e: any) {
-      toast.error(userMessage(e, "Could not submit"));
+      toast.error(guardShiftError(e) ?? userMessage(e, "Could not submit"));
     } finally {
       setSubmitting(false);
     }

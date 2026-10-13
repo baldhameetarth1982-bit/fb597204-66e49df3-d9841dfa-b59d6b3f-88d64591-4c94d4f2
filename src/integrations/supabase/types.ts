@@ -4926,6 +4926,53 @@ export type Database = {
           },
         ]
       }
+      guard_join_requests: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          reason: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          society_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          society_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          society_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guard_join_requests_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guard_reauth_blocks: {
         Row: {
           set_at: string
@@ -5010,6 +5057,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "guard_sessions_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guard_shifts: {
+        Row: {
+          created_at: string
+          end_time: string
+          society_id: string
+          start_time: string
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          weekdays: number[]
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          society_id: string
+          start_time: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          weekdays: number[]
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          society_id?: string
+          start_time?: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          weekdays?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guard_shifts_society_id_fkey"
             columns: ["society_id"]
             isOneToOne: false
             referencedRelation: "societies"
@@ -13011,6 +13102,10 @@ export type Database = {
           sos: number
         }[]
       }
+      _guard_on_shift: {
+        Args: { _sid: string; _uid: string }
+        Returns: boolean
+      }
       _guard_open_session: {
         Args: { _device: string; _method: string; _sid: string; _token: string }
         Returns: string
@@ -13397,6 +13492,10 @@ export type Database = {
           name: string
         }[]
       }
+      _validate_guard_shift: {
+        Args: { _end: string; _start: string; _weekdays: number[] }
+        Returns: undefined
+      }
       _vehicle_authorized_slots: { Args: { _vehicle: string }; Returns: string }
       _visitor_clean: { Args: { _max: number; _t: string }; Returns: string }
       _visitor_new_code: { Args: { _society: string }; Returns: string }
@@ -13693,6 +13792,15 @@ export type Database = {
           phone_last4: string
           started_at: string
           user_id: string
+        }[]
+      }
+      admin_list_guard_join_requests: {
+        Args: never
+        Returns: {
+          created_at: string
+          full_name: string
+          id: string
+          phone_last4: string
         }[]
       }
       admin_list_platform_staff: {
@@ -14044,6 +14152,17 @@ export type Database = {
         Args: { _channel: string; _reason: string }
         Returns: number
       }
+      admin_review_guard_join_request: {
+        Args: {
+          _approve: boolean
+          _end?: string
+          _id: string
+          _reason?: string
+          _start?: string
+          _weekdays?: number[]
+        }
+        Returns: undefined
+      }
       admin_review_saas_upi_payment: {
         Args: {
           _approve: boolean
@@ -14168,6 +14287,15 @@ export type Database = {
           _society_id: string
         }
         Returns: Json
+      }
+      admin_set_guard_shift: {
+        Args: {
+          _end: string
+          _guard_user_id: string
+          _start: string
+          _weekdays: number[]
+        }
+        Returns: undefined
       }
       admin_set_handover_status: {
         Args: { _note?: string; _society_id: string; _status: string }
@@ -14659,6 +14787,7 @@ export type Database = {
             Args: { _bill_id: string; _reason: string; _society_id: string }
             Returns: Json
           }
+      cancel_guard_join_request: { Args: never; Returns: undefined }
       cancel_material_pass: { Args: { _pass_id: string }; Returns: undefined }
       check_in_class: { Args: { _class_id: string }; Returns: undefined }
       check_in_class_qr: { Args: { _token: string }; Returns: string }
@@ -15720,6 +15849,7 @@ export type Database = {
       }
       guard_patrol_list: { Args: never; Returns: Json }
       guard_patrol_start: { Args: { _round_id: string }; Returns: undefined }
+      guard_raise_sos: { Args: { _note?: string }; Returns: string }
       guard_recurring_list: {
         Args: { _q?: string }
         Returns: {
@@ -17392,6 +17522,10 @@ export type Database = {
             }
             Returns: Json
           }
+      submit_guard_join_request: {
+        Args: { _code: string; _full_name: string }
+        Returns: string
+      }
       submit_join_request: {
         Args: {
           _code: string

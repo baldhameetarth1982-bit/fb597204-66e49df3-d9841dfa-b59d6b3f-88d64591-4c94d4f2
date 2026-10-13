@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useTranslation } from "react-i18next";
 import { localeTag } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
@@ -23,7 +24,11 @@ export const Route = createFileRoute("/_resident/app/visitors")({
       { name: "description", content: "Invite guests, approve visitors at the gate and see your visitor history." },
     ],
   }),
-  component: MyVisitors,
+  component: () => (
+    <FeatureGate feature="visitors">
+      <MyVisitors />
+    </FeatureGate>
+  ),
 });
 
 interface VisitorRow {

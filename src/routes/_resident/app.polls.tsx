@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -29,7 +30,11 @@ export const Route = createFileRoute("/_resident/app/polls")({
       { property: "og:description", content: "Vote on your society's decisions." },
     ],
   }),
-  component: PollsPage,
+  component: () => (
+    <FeatureGate feature="polls">
+      <PollsPage />
+    </FeatureGate>
+  ),
 });
 
 interface Poll { id: string; title: string; description: string | null; status: string; closes_at: string | null }

@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { MinutesCorrections } from "@/components/meetings/MinutesCorrections";
 import { askConfirm } from "@/components/system/AskTextDialog";
 import { askText } from "@/components/system/AskTextDialog";
@@ -35,7 +36,11 @@ export const Route = createFileRoute("/_society/society/meetings")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: MeetingsAdmin,
+  component: () => (
+    <FeatureGate feature="meetings">
+      <MeetingsAdmin />
+    </FeatureGate>
+  ),
 });
 
 type Meeting = { id: string; title: string; agenda: string; starts_at: string; ends_at: string | null; location: string | null; meeting_link: string | null; audience: string; status: string; minutes: string | null; cancel_reason: string | null };

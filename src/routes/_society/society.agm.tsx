@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { askConfirm } from "@/components/system/AskTextDialog";
 import { useState } from "react";
@@ -31,7 +32,11 @@ export const Route = createFileRoute("/_society/society/agm")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: AgmAdmin,
+  component: () => (
+    <FeatureGate feature="agm">
+      <AgmAdmin />
+    </FeatureGate>
+  ),
 });
 
 type Agm = { id: string; meeting_id: string; title: string; financial_year: string; notice_date: string | null; quorum_basis: string; quorum_type: string; quorum_value: number; status: string; archive_reason: string | null };

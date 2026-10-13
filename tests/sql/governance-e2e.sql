@@ -73,8 +73,8 @@ BEGIN
          'qa-gov-' || lower(u) || '@example.invalid', '{}'::jsonb, '{}'::jsonb, now(), now()
   FROM unnest(ARRAY['ADMA','RESA','RESA2','BLKA','RESX','ADMB','RESB']) u;
   INSERT INTO public.societies (id, name, city, plan, plan_id, plan_status, plan_expires_at, status, structure_mode)
-  VALUES ((ids->>'SA')::uuid, '[QA] GOV Society A', 'Testville', 'pro', 'pro', 'active', now() + interval '30 days', 'active', 'structured'),
-         ((ids->>'SB')::uuid, '[QA] GOV Society B', 'Testville', 'pro', 'pro', 'active', now() + interval '30 days', 'active', 'structured');
+  VALUES ((ids->>'SA')::uuid, '[QA] GOV Society A', 'Testville', 'premium', 'premium', 'active', now() + interval '30 days', 'active', 'structured'),
+         ((ids->>'SB')::uuid, '[QA] GOV Society B', 'Testville', 'premium', 'premium', 'active', now() + interval '30 days', 'active', 'structured');
   INSERT INTO public.blocks (id, society_id, name) VALUES ((ids->>'BKA')::uuid, (ids->>'SA')::uuid, 'QA'), ((ids->>'BKB')::uuid, (ids->>'SB')::uuid, 'QB');
   INSERT INTO public.flats (id, society_id, block_id, flat_number, unit_type) VALUES
     ((ids->>'FA1')::uuid, (ids->>'SA')::uuid, (ids->>'BKA')::uuid, 'G-101', 'flat'),

@@ -13331,6 +13331,7 @@ export type Database = {
       _sec_admin_society: { Args: never; Returns: string }
       _send_platform_announcement: { Args: { _id: string }; Returns: number }
       _society_flat_capacity: { Args: { _society_id: string }; Returns: number }
+      _society_plan_rank: { Args: { _society_id: string }; Returns: number }
       _staff_asset_ids: {
         Args: { _society: string; _staff: string }
         Returns: {

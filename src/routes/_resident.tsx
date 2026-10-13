@@ -51,7 +51,7 @@ function ResidentGuard() {
     return <Navigate to={ROLE_HOME[ROLES.SECURITY]} replace />;
   }
   if (!societyId) return <Navigate to="/onboarding" search={{ ref: undefined }} replace />;
-  if (!isSuper && societyId && access === false && !pathname.endsWith("/plan-required")) {
+  if (!isSuper && societyId && access === false && pathname.startsWith("/app") && !pathname.endsWith("/plan-required")) {
     return <Navigate to="/app/plan-required" replace />;
   }
   return (

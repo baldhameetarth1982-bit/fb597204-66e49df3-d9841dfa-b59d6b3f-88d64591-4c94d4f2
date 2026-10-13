@@ -80,7 +80,8 @@ export function AppHeader({
 
         <Link to="/" className="md:hidden flex items-center gap-2 ms-1">
           <Logo size={32} />
-          <SociyoHubLogo size={18} />
+          {/* Keep room for the view switch on phones: show only the logo mark then. */}
+          <span className={viewSwitch ? "hidden min-[440px]:inline-flex" : "inline-flex"}><SociyoHubLogo size={18} /></span>
         </Link>
 
         {section && (
@@ -95,7 +96,7 @@ export function AppHeader({
             <Button asChild variant="outline" size="sm" className="h-10 rounded-full px-3 gap-1.5">
               <Link to={viewSwitch.to as any} aria-label={viewSwitch.label}>
                 <viewSwitch.Icon className="h-4 w-4" aria-hidden />
-                <span className="max-[380px]:sr-only">{viewSwitch.label}</span>
+                <span className="max-[340px]:sr-only">{viewSwitch.label}</span>
               </Link>
             </Button>
           )}

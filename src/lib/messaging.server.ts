@@ -144,7 +144,8 @@ export async function dispatchMessages(limit = 50) {
       const attempts = m.attempts + 1;
       const giveUp = res.permanent || attempts >= 5;
       await finish({ status: giveUp ? "failed" : "queued", attempts, last_error: short(res.error),
-        next_attempt_at: new Date(Date.now() + 2 ** attempts * 60_000).toISOString() });
+        // Exponential backoff plus up to 30 s random jitter so retries don't stampede a recovering provider.
+        next_attempt_at: new Date(Date.now() + 2 ** attempts * 60_000 + Math.floor(Math.random() * 30_000)).toISOString() });
       stats.failed++; if (!health.get(ch)?.ok) health.set(ch, { ok: false, error: short(res.error) });
     }
   }

@@ -135,7 +135,7 @@ function PlansAdmin() {
           <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <p>
-              Razorpay is used only for SociyoHub subscriptions. The 14-day trial needs no card and
+              Razorpay is used only for SociyoHub subscriptions. The free trial needs no card and
               moves to <strong className="text-foreground">Starter</strong> if no plan is chosen.
             </p>
           </div>

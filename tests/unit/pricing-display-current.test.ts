@@ -10,7 +10,8 @@ describe("current pricing displays", () => {
     const src = readFileSync(file, "utf8");
     it(`${file} shows the per-flat price`, () => {
       expect(src).toContain("price_per_flat_inr");
-      expect(src).toContain("/ flat / month");
+      // Monthly label, or the term-aware label ("/ flat / {month|quarter|year}").
+      expect(src).toMatch(/\/ flat \/ (month|\{term === 1 \? "month")/);
     });
     it(`${file} does not show retired fixed monthly prices`, () => {
       expect(src).not.toMatch(RETIRED);

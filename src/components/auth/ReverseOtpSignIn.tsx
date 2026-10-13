@@ -107,14 +107,35 @@ export function ReverseOtpSignIn({ onSignedIn }: { onSignedIn: () => void }) {
             <p className="text-xs text-muted-foreground">{t("reverseOtp.yourCode", "Your code")}</p>
             <p className="mt-1 font-mono text-2xl font-semibold tracking-widest text-foreground break-all">{attempt.channels[0]?.code}</p>
           </div>
-          {attempt.channels.map((c) => (
-            <Button key={c.type} asChild variant={c.type === "sms" ? "default" : "outline"} className="w-full min-h-11">
-              <a href={c.intent} target={c.type === "whatsapp" ? "_blank" : undefined} rel="noopener noreferrer">
-                {c.type === "sms" ? <MessageSquare className="h-4 w-4 mr-2" /> : <MessageCircle className="h-4 w-4 mr-2" />}
-                {c.type === "sms" ? t("reverseOtp.sendSms", "Send by SMS") : t("reverseOtp.sendWhatsapp", "Send on WhatsApp")}
-              </a>
-            </Button>
-          ))}
+          {attempt.channels.map((c) => {
+            // WhatsApp refuses to open inside an embedded frame ("api.whatsapp.com is blocked").
+            // Always open it as a real top-level page/app instead.
+            const waUrl = `https://wa.me/${c.number}?text=${encodeURIComponent(c.code)}`;
+            const href = c.type === "whatsapp" ? waUrl : c.intent;
+            const openWhatsApp = (e: React.MouseEvent) => {
+              if (c.type !== "whatsapp") return;
+              e.preventDefault();
+              const w = window.open(waUrl, "_blank", "noopener,noreferrer");
+              if (!w) {
+                try { (window.top ?? window).location.href = waUrl; } catch { window.location.href = waUrl; }
+              }
+            };
+            return (
+              <div key={c.type} className="space-y-1">
+                <Button asChild variant={c.type === "sms" ? "default" : "outline"} className="w-full min-h-11">
+                  <a href={href} onClick={openWhatsApp} target={c.type === "whatsapp" ? "_blank" : undefined} rel="noopener noreferrer">
+                    {c.type === "sms" ? <MessageSquare className="h-4 w-4 mr-2" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+                    {c.type === "sms" ? t("reverseOtp.sendSms", "Send by SMS") : t("reverseOtp.sendWhatsapp", "Send on WhatsApp")}
+                  </a>
+                </Button>
+                {c.type === "whatsapp" && (
+                  <p className="text-center text-[11px] text-muted-foreground">
+                    {t("reverseOtp.waManual", "If WhatsApp doesn't open, send {{code}} to +{{number}} on WhatsApp.", { code: c.code, number: c.number })}
+                  </p>
+                )}
+              </div>
+            );
+          })}
           <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground" aria-live="polite">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("reverseOtp.waiting", "Waiting for your message…")}
           </p>

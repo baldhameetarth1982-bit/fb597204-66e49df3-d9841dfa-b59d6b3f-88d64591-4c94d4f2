@@ -41,7 +41,6 @@ function SocietyGuard() {
   }
   if (!societyId) return <Navigate to="/onboarding" search={{ ref: undefined }} replace />;
   if (!isSuper && societyId && access === false && pathname.startsWith("/society") && !pathname.endsWith("/plan-required")) {
-    console.error("DBG society guard redirect", pathname);
     return <Navigate to="/society/plan-required" replace />;
   }
   return <Outlet />;

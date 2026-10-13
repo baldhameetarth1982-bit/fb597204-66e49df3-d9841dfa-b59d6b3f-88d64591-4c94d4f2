@@ -15,6 +15,7 @@ import { OnboardingStepper } from "@/components/system/OnboardingStepper";
 import { searchSocietiesPublic, getJoinStructure, submitJoinRequestForUnit, type JoinStructure } from "@/lib/onboarding.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { tu } from "@/lib/i18n";
+import { guardShiftError } from "@/lib/guard-shift";
 
 export const Route = createFileRoute("/onboarding/join")({
   head: () => ({ meta: [{ title: "Join society — SociyoHub" }] }),

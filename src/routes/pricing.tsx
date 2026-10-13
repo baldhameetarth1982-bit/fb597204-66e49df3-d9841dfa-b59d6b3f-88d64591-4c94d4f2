@@ -52,9 +52,21 @@ function NoSubscriptionForRole() {
   );
 }
 
+// Mirrors the server quote: term price per flat rounded to whole rupees (6% quarterly, 8% yearly).
+const TERMS = [
+  { months: 1 as const, label: "Monthly", unit: "month", pct: 0 },
+  { months: 3 as const, label: "Quarterly", unit: "quarter", pct: 6 },
+  { months: 12 as const, label: "Yearly", unit: "year", pct: 8 },
+];
+function termPricePerFlat(monthly: number, months: 1 | 3 | 12) {
+  const pct = TERMS.find((t) => t.months === months)!.pct;
+  return Math.round(monthly * months * (100 - pct) / 100);
+}
+
 function PublicPricing() {
   const [units, setUnits] = useState<number | null>(null);
   const [showEnterprise, setShowEnterprise] = useState(false);
+  const [term, setTerm] = useState<1 | 3 | 12>(1);
 
   const { data: settings } = useQuery({
     queryKey: ["pricing-settings"],
@@ -169,6 +181,22 @@ function PublicPricing() {
               </div>
             </Card>
 
+            <div role="radiogroup" aria-label="Billing period" className="mx-auto mb-6 flex w-fit gap-1 rounded-full border border-border bg-muted/40 p-1">
+              {TERMS.map((t) => (
+                <button
+                  key={t.months}
+                  type="button"
+                  role="radio"
+                  aria-checked={term === t.months}
+                  onClick={() => setTerm(t.months)}
+                  className={`min-h-11 rounded-full px-4 text-sm font-medium transition-colors ${term === t.months ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {t.label}
+                  {t.pct > 0 && <span className="ml-1 text-xs opacity-80">−{t.pct}%</span>}
+                </button>
+              ))}
+            </div>
+
             {/* Standard plans */}
             <div className="grid md:grid-cols-3 gap-4">
               {standard.map((p) => {
@@ -190,8 +218,20 @@ function PublicPricing() {
                       <h3 className="text-xl font-semibold tracking-tight">{p.plan_name}</h3>
                     </div>
                     <div className="mt-3 flex items-baseline gap-1">
-                      <span className="text-4xl font-bold">₹{p.price_per_flat_inr ?? 0}</span>
-                      <span className="text-muted-foreground text-sm">/ flat / month</span>
+                      {(() => {
+                        const t = TERMS.find((x) => x.months === term)!;
+                        const full = Number(p.price_per_flat_inr ?? 0) * term;
+                        const net = termPricePerFlat(Number(p.price_per_flat_inr ?? 0), term);
+                        return (
+                          <>
+                            {net < full && (
+                              <span className="text-lg text-muted-foreground line-through tabular-nums" aria-label={`was ₹${full}`}>₹{full}</span>
+                            )}
+                            <span className="text-4xl font-bold tabular-nums">₹{net}</span>
+                            <span className="text-muted-foreground text-sm">{term === 1 ? "/ flat / month" : `/ flat / ${t.unit}`}</span>
+                          </>
+                        );
+                      })()}
                     </div>
                     <ul className="mt-4 space-y-2 text-sm flex-1">
                       {p.features.map((f, i) => (

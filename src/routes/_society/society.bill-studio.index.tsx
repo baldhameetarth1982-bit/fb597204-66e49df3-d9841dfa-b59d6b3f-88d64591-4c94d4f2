@@ -4,7 +4,8 @@ import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Building2, ImageIcon, LayoutTemplate, Loader2, Palette, PenLine, Type } from "lucide-react";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { PageShell }
+import { MobileHero } from "@/components/shared/MobileHero" from "@/components/shared/PageHeader";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { SettingsSection, SaveBar } from "@/components/settings/SettingsUI";
 import { ListSkeleton, LoadError, InlineNotice } from "@/components/people/PeopleUI";
@@ -38,11 +39,9 @@ export const Route = createFileRoute("/_society/society/bill-studio/")({
 function BillTemplatesPage() {
   const { societyId, loading } = useSocietyId();
   return (
+    <>
+    <MobileHero title={tu("mod.billTemplates")} subtitle={tu("op.how_your_bills_look_changes")} icon={LayoutTemplate} />
     <PageShell>
-      <PageHeader
-        title={tu("mod.billTemplates")}
-        description={tu("op.how_your_bills_look_changes")}
-      />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
       {loading ? (
         <ListSkeleton rows={3} />
@@ -66,6 +65,7 @@ function BillTemplatesPage() {
         </div>
       )}
     </PageShell>
+    </>
   );
 }
 

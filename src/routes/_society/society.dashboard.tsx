@@ -24,6 +24,7 @@ import { StatPill, StatPillRow } from "@/components/shared/StatPill";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { ListCard, ListCardGroup } from "@/components/shared/ListCard";
 import { SetupChecklistCard } from "@/components/society/SetupChecklistCard";
+import { PlanEndingBanner } from "@/components/subscription/PlanEndingBanner";
 
 export const Route = createFileRoute("/_society/society/dashboard")({
   head: () => ({
@@ -230,6 +231,8 @@ function SocietyDashboard() {
           </Button>
         </div>
       </header>
+
+      <PlanEndingBanner societyId={societyId} />
 
       {/* Key money figures — one strip, not three hero cards */}
       <ul aria-label={t("sd.keyMoney")} aria-busy={isLoading} className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4 [&>li]:border-border [&>li:nth-child(odd)]:border-r lg:[&>li]:border-r lg:[&>li:last-child]:border-r-0 [&>li:nth-child(-n+2)]:border-b lg:[&>li]:border-b-0">

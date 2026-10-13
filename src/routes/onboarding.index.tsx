@@ -63,7 +63,7 @@ function OnboardingChoice() {
       <PendingRoleInvites />
 
       <div className="space-y-4">
-        <Link to="/onboarding/choose-plan" className="block group">
+        <Link to="/onboarding/create" className="block group">
           <Card className="rounded-3xl border-0 shadow-md bg-gradient-to-br from-primary to-primary/85 text-primary-foreground transition-transform group-active:scale-[0.98]">
             <CardContent className="p-6 flex items-start gap-4 sm:p-6">
               <div className="h-14 w-14 rounded-2xl bg-primary-foreground/15 grid place-items-center text-3xl">
@@ -76,6 +76,7 @@ function OnboardingChoice() {
                 <p className="mt-1 text-sm opacity-90">
                   {tu("op.set_up_your_building_add")}
                 </p>
+                <p className="mt-2 text-xs font-medium opacity-95">{tu("ln.ob.trialBadge")}</p>
                 <span className="mt-3 inline-flex items-center text-sm font-medium opacity-95">
                   {tu("op.get_started")} <ArrowRight className="h-4 w-4 ml-1" />
                 </span>

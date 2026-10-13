@@ -8922,6 +8922,7 @@ export type Database = {
           accepted_terms_at: string | null
           active_flat_id: string | null
           avatar_url: string | null
+          birth_year: number | null
           created_at: string
           elder_mode: boolean
           email: string | null
@@ -8951,6 +8952,7 @@ export type Database = {
           accepted_terms_at?: string | null
           active_flat_id?: string | null
           avatar_url?: string | null
+          birth_year?: number | null
           created_at?: string
           elder_mode?: boolean
           email?: string | null
@@ -8980,6 +8982,7 @@ export type Database = {
           accepted_terms_at?: string | null
           active_flat_id?: string | null
           avatar_url?: string | null
+          birth_year?: number | null
           created_at?: string
           elder_mode?: boolean
           email?: string | null
@@ -17619,6 +17622,10 @@ export type Database = {
           _vendor_id: string
         }
         Returns: string
+      }
+      user_account_complete_internal: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
       user_can_admin_migrations: {
         Args: { _society_id: string; _user_id: string }

@@ -1751,6 +1751,13 @@
       "when": 1791880213028,
       "tag": "0249_new_society_pro_trial_and_duplicate_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 250,
+      "version": "7",
+      "when": 1791880629512,
+      "tag": "0250_profile_birth_year_and_required_phone_age",
+      "breakpoints": true
     }
   ]
 }

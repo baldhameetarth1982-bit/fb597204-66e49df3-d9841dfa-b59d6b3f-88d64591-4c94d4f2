@@ -43,14 +43,16 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreload: "intent",
-    defaultPreloadStaleTime: 0,
+    // Reuse hover-preloaded data instead of refetching on every hover.
+    defaultPreloadStaleTime: 30_000,
     defaultPendingComponent: () => (
       <div className="min-h-[50dvh] grid place-items-center p-6">
         <SociyoHubLoader />
       </div>
     ),
-    defaultPendingMs: 150,
-    defaultPendingMinMs: 300,
+    // Only show the loader for genuinely slow loads, and don't force it to linger.
+    defaultPendingMs: 400,
+    defaultPendingMinMs: 0,
   });
 
   return router;

@@ -4,10 +4,33 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 
 // Recent screens are kept on this device only (wiped on sign-out via the
 // offline-cache prefix) so reopening the app shows them instantly.
+// Writes are deferred to idle time and capped in size so saving never
+// blocks taps or scrolling (the old 1s full-cache write caused lag).
+const MAX_PERSIST_CHARS = 1_500_000;
+const idleStorage =
+  typeof window !== "undefined"
+    ? {
+        getItem: (k: string) => window.localStorage.getItem(k),
+        removeItem: (k: string) => window.localStorage.removeItem(k),
+        setItem: (k: string, v: string) => {
+          const write = () => {
+            try {
+              if (v.length > MAX_PERSIST_CHARS) window.localStorage.removeItem(k);
+              else window.localStorage.setItem(k, v);
+            } catch {
+              /* storage full: skip */
+            }
+          };
+          const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void }).requestIdleCallback;
+          if (ric) ric(write, { timeout: 5000 });
+          else setTimeout(write, 0);
+        },
+      }
+    : undefined;
 const persister = createSyncStoragePersister({
-  storage: typeof window !== "undefined" ? window.localStorage : undefined,
+  storage: idleStorage,
   key: "sociohub:cache:rq",
-  throttleTime: 1000,
+  throttleTime: 5000,
 });
 import { useEffect, useRef, useState } from "react";
 import { isMarketingPage } from "@/lib/marketing-pages";

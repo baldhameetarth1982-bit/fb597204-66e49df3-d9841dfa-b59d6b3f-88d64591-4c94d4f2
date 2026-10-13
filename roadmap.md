@@ -61,8 +61,8 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Downgrade applies from next period only, no refund
 - [x] Renewals (same or other plan) start after the current paid period ends, never overlap
 - [x] Plan-ending banner 5/4/3/2 days, 24-hour countdown on last day (dashboard)
-- [ ] New societies: 30-day Pro trial, skip plan choice, go straight to setup (existing trials unchanged)
-- [ ] Block duplicate society: same name + same address, or one phone creating a second society
+- [x] New societies: 30-day Pro trial, skip plan choice, go straight to setup (existing trials unchanged)
+- [x] Block duplicate society: same name + same address, or one phone creating a second society
 - [ ] Phone required for every role (resident, admin, block admin, guard); age chosen at sign-up
 - [ ] Society admin "Switch to resident" option
 - [ ] Post-login choice: Create society / Join as resident / Join as guard (by code, admin approves)

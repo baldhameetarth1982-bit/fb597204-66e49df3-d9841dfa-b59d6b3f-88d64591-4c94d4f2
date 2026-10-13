@@ -20,7 +20,7 @@ const TABS = [
     to: "/admin/users",
     labelKey: "nav.users",
     icon: Users,
-    match: ["/admin/users", "/admin/plans", "/admin/custom-plans"],
+    match: ["/admin/users", "/admin/plans", "/admin/custom-plans", "/admin/upi-payments", "/admin/subscription-payments", "/admin/discount-codes"],
   },
   {
     to: "/admin/bi",

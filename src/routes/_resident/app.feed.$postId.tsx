@@ -112,7 +112,8 @@ function PostThread() {
     // Author is always the signed-in user; the database rejects any other user_id or a post outside your society.
     const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, body });
     setSending(false);
-    if (error) {
+    // The database drops an identical repeat sent within 30 s (double tap); the first copy is already saved.
+    if (error && !String(error.message).includes("duplicate_submit")) {
       // Keep the typed text so it can be retried.
       toast.error(t("fp.sendFailed"));
       return;

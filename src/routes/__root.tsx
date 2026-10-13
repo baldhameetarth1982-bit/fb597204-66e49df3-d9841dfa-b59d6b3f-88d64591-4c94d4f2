@@ -216,7 +216,11 @@ function AccountDataBoundary() {
   useEffect(() => {
     const nextUserId = user ? `${user.id}:${profile?.society_id ?? ""}` : null;
     // Only a real account/society switch clears; the first sign-in restore after a reload keeps the saved screens.
-    if (previousUserId.current && previousUserId.current !== nextUserId) {
+    let owner: string | null = null;
+    try { owner = localStorage.getItem("sociohub:cache:owner"); } catch { /* blocked */ }
+    const savedForOther = !!nextUserId && !!owner && owner !== nextUserId;
+    if (nextUserId) try { localStorage.setItem("sociohub:cache:owner", nextUserId); } catch { /* blocked */ }
+    if (savedForOther || (previousUserId.current && previousUserId.current !== nextUserId)) {
       void queryClient.cancelQueries();
       queryClient.clear();
     }

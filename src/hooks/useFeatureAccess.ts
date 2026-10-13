@@ -25,7 +25,7 @@ export function useFeatureAccess() {
     queryFn: async () => {
       const { data } = await supabase
         .from("societies")
-        .select("plan_id,plan_status,trial_ends_at,plan_expires_at,status")
+        .select("plan_id,plan_status,trial_ends_at,plan_expires_at,status,scheduled_plan_id,scheduled_plan_starts_at")
         .eq("id", societyId!)
         .maybeSingle();
       return {
@@ -34,11 +34,13 @@ export function useFeatureAccess() {
         trial_ends_at: (data as any)?.trial_ends_at as string | null,
         plan_expires_at: (data as any)?.plan_expires_at as string | null,
         status: (data as any)?.status as string | null,
+        scheduled_plan_id: (data as any)?.scheduled_plan_id as string | null,
+        scheduled_plan_starts_at: (data as any)?.scheduled_plan_starts_at as string | null,
       };
     },
   });
 
-  const plan: PlanKey = normalizePlan(data?.plan_id, data?.plan_status, data?.trial_ends_at, { planExpiresAt: data?.plan_expires_at, societyStatus: data?.status });
+  const plan: PlanKey = normalizePlan(data?.plan_id, data?.plan_status, data?.trial_ends_at, { planExpiresAt: data?.plan_expires_at, societyStatus: data?.status, scheduledPlanId: data?.scheduled_plan_id, scheduledPlanStartsAt: data?.scheduled_plan_starts_at });
   const status = data?.plan_status ?? null;
   const loading = sidLoading || isLoading;
 

@@ -971,9 +971,21 @@ export function normalizePlan(
   raw: string | null | undefined,
   status?: string | null,
   trialEndsAt?: string | Date | null,
-  opts?: { planExpiresAt?: string | Date | null; societyStatus?: string | null },
+  opts?: {
+    planExpiresAt?: string | Date | null; societyStatus?: string | null;
+    scheduledPlanId?: string | null; scheduledPlanStartsAt?: string | Date | null;
+  },
 ): PlanKey {
   const spec = PLAN_NORMALIZATION_SPEC;
+  // A paid plan booked to start (after a trial or the previous period) counts from its start
+  // time, even before the hourly server switch copies it into plan_id.
+  if (opts?.scheduledPlanId && opts.scheduledPlanStartsAt && opts.planExpiresAt) {
+    const st = new Date(opts.scheduledPlanStartsAt).getTime();
+    const ex = new Date(opts.planExpiresAt).getTime();
+    if (Number.isFinite(st) && Number.isFinite(ex) && st <= Date.now() && ex > Date.now()) {
+      return normalizePlan(opts.scheduledPlanId, "active", null, { planExpiresAt: opts.planExpiresAt, societyStatus: opts.societyStatus });
+    }
+  }
   // Suspended/non-active societies never unlock paid features.
   const soc = (opts?.societyStatus ?? "").toLowerCase().trim();
   if (soc && soc !== "active") return "basic";
@@ -1005,15 +1017,18 @@ export function normalizePlan(
 }
 
 /** Columns every server/client plan check must read. */
-export const PLAN_COLUMNS = "plan_id,plan_status,trial_ends_at,plan_expires_at,status";
+export const PLAN_COLUMNS = "plan_id,plan_status,trial_ends_at,plan_expires_at,status,scheduled_plan_id,scheduled_plan_starts_at";
 export function planFromSocietyRow(row: {
   plan_id?: string | null; plan_status?: string | null; trial_ends_at?: string | null;
   plan_expires_at?: string | null; status?: string | null;
+  scheduled_plan_id?: string | null; scheduled_plan_starts_at?: string | null;
 } | null | undefined): PlanKey {
   if (!row) return "basic";
   return normalizePlan(row.plan_id, row.plan_status, row.trial_ends_at, {
     planExpiresAt: row.plan_expires_at ?? null,
     societyStatus: row.status ?? null,
+    scheduledPlanId: row.scheduled_plan_id ?? null,
+    scheduledPlanStartsAt: row.scheduled_plan_starts_at ?? null,
   });
 }
 

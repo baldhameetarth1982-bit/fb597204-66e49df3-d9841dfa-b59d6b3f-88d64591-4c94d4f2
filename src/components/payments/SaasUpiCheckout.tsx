@@ -10,10 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTranslation } from "react-i18next";
-import { getSaasUpiQuote, listMySaasUpiPayments, submitSaasUpiPayment } from "@/lib/saas-upi-payment.functions";
+import { getSaasPlanChangeOptions, getSaasUpiQuote, listMySaasUpiPayments, submitSaasUpiPayment } from "@/lib/saas-upi-payment.functions";
 
-const ERR_CODES = ["invalid_file", "duplicate_reference", "already_pending", "price_changed", "invalid_paid_at", "rate_limited", "upi_unavailable", "custom_pricing", "not_authorized", "code_invalid"];
+const ERR_CODES = ["invalid_file", "duplicate_reference", "already_pending", "price_changed", "invalid_paid_at", "rate_limited", "upi_unavailable", "custom_pricing", "not_authorized", "code_invalid", "plan_change_already_scheduled", "upgrade_unavailable"];
 const REJECT_CODES = ["short_paid", "not_received", "wrong_reference", "unclear_proof", "duplicate", "other"];
+const fmtDate = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "";
 const inr = (p: number) => `₹${(p / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 async function toBase64(f: File) {
@@ -60,8 +62,19 @@ export function SaasUpiCheckout(p: Props) {
     placeholderData: (prev) => prev,
     staleTime: 30_000,
   });
+  const fetchOptions = useServerFn(getSaasPlanChangeOptions);
+  const optsQ = useQuery({
+    queryKey: ["saas-plan-change-options", p.societyId, p.planId],
+    queryFn: () => fetchOptions({ data: { societyId: p.societyId, planId: p.planId } }),
+    staleTime: 30_000,
+  });
+  const opts = optsQ.data;
+  const canUpgradeNow = Boolean(opts?.upgrade.available && (opts.upgrade.amount_paise ?? 0) > 0);
+  const [when, setWhen] = useState<"now" | "next">("now");
+  const upgradeMode = canUpgradeNow && when === "now";
+  const blocked = opts?.term.effect === "blocked";
   const q = quoteQ.data;
-  const amountPaise = q?.amount_paise ?? 0;
+  const amountPaise = upgradeMode ? (opts?.upgrade.amount_paise ?? 0) : (q?.amount_paise ?? 0);
   const codeOk = q?.discount_code_status === "applied";
   const [utr, setUtr] = useState("");
   const [payer, setPayer] = useState("");
@@ -73,7 +86,7 @@ export function SaasUpiCheckout(p: Props) {
   const [busy, setBusy] = useState(false);
 
   const amount = (amountPaise / 100).toFixed(2);
-  const note = `SociyoHub ${p.planName} ${term}M`;
+  const note = upgradeMode ? `SociyoHub ${p.planName} upgrade` : `SociyoHub ${p.planName} ${term}M`;
   const upiLink = `upi://pay?pa=${encodeURIComponent(p.upiVpa)}&pn=${encodeURIComponent(p.payeeName)}&am=${amount}&mam=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
   const pending = mine.data?.find((r) => r.status === "pending");
   const lastRejected = mine.data?.[0]?.status === "rejected" ? mine.data[0] : null;
@@ -88,28 +101,32 @@ export function SaasUpiCheckout(p: Props) {
     if (!agreeExact || !agreeTerms) return toast.error(t("ln.upi.tickBoth"));
     const when = new Date(paidAt);
     if (Number.isNaN(when.getTime())) return toast.error(t("ln.upi.e.invalid_paid_at"));
-    if (!q || amountPaise <= 0 || quoteQ.isFetching) return;
-    if (code && !codeOk) return toast.error(t("ln.upi.e.code_invalid"));
+    if (amountPaise <= 0 || quoteQ.isFetching || optsQ.isFetching) return;
+    if (!upgradeMode && !q) return;
+    if (!upgradeMode && code && !codeOk) return toast.error(t("ln.upi.e.code_invalid"));
     setBusy(true);
     try {
       await submit({ data: {
-        societyId: p.societyId, planId: p.planId, ...(p.flatQuantity ? { flatQuantity: p.flatQuantity } : {}),
-        termMonths: term, discountCode: codeOk ? code : "",
+        societyId: p.societyId, planId: p.planId, mode: upgradeMode ? "upgrade" : "term",
+        ...(p.flatQuantity && !upgradeMode ? { flatQuantity: p.flatQuantity } : {}),
+        termMonths: term, discountCode: codeOk && !upgradeMode ? code : "",
         requestId: requestId.current, expectedAmountPaise: amountPaise, utr: r, payerName: payer.trim(),
         payerUpi: payerUpi.trim(), paidAt: when.toISOString(), consent: true, proofBase64: await toBase64(file),
       } });
       toast.success(t("ln.upi.sent"));
       requestId.current = crypto.randomUUID();
       await qc.invalidateQueries({ queryKey: ["saas-upi-mine", p.societyId] });
+      void optsQ.refetch();
     } catch (e) {
       const m = (e as Error).message;
       toast.error(errMsg(m));
       if (m === "code_invalid") { setCode(""); setCodeInput(""); }
       if (m === "price_changed" || m === "code_invalid") void quoteQ.refetch();
+      if (m === "price_changed" || m === "upgrade_unavailable" || m === "plan_change_already_scheduled") void optsQ.refetch();
     } finally { setBusy(false); }
   }
 
-  if (mine.isLoading || (quoteQ.isLoading && !q)) return <div className="py-6 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (mine.isLoading || optsQ.isLoading || (quoteQ.isLoading && !q)) return <div className="py-6 grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
   if (pending) {
     return (
@@ -123,8 +140,45 @@ export function SaasUpiCheckout(p: Props) {
     );
   }
 
+  if (blocked && !canUpgradeNow) {
+    return (
+      <div role="status" className="rounded-2xl border border-warning/30 bg-warning/5 p-5 text-sm">
+        {t("ln.chg.blocked", { date: fmtDate(opts?.scheduled_plan_starts_at) })}
+      </div>
+    );
+  }
+
+  const termNote = !opts || upgradeMode ? null
+    : opts.term.effect === "after_trial" ? t("ln.chg.afterTrial", { date: fmtDate(opts.term.starts_at) })
+    : opts.term.effect === "extend" ? t("ln.chg.startsOn", { date: fmtDate(opts.term.starts_at) })
+    : opts.term.effect === "schedule" && opts.upgrade.reason === "not_higher" ? t("ln.chg.lower", { date: fmtDate(opts.term.starts_at) })
+    : opts.term.effect === "schedule" ? t("ln.chg.nextBody", { plan: p.planName, date: fmtDate(opts.term.starts_at) })
+    : null;
+
   return (
     <div className="space-y-5">
+      {canUpgradeNow && opts && (
+        <div className="space-y-2 rounded-2xl border border-border p-5">
+          <p className="text-sm font-semibold">{t("ln.chg.title", { plan: p.planName })}</p>
+          <div role="radiogroup" aria-label={t("ln.chg.title", { plan: p.planName })} className="grid gap-2 sm:grid-cols-2">
+            {(["now", "next"] as const).map((w) => (
+              <button key={w} type="button" role="radio" aria-checked={when === w}
+                onClick={() => { setWhen(w); requestId.current = crypto.randomUUID(); }}
+                className={`min-h-[88px] rounded-xl border-2 p-3 text-left transition-colors ${when === w ? "border-primary bg-primary/5" : "border-border"}`}>
+                <span className="block text-sm font-semibold">{w === "now" ? t("ln.chg.now") : t("ln.chg.next")}</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {w === "now"
+                    ? t("ln.chg.nowBody", { days: opts.upgrade.days_left, plan: p.planName })
+                    : t("ln.chg.nextBody", { plan: p.planName, date: fmtDate(opts.term.starts_at) })}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {termNote && (
+        <p role="status" className="rounded-xl bg-secondary/60 p-3 text-sm text-muted-foreground">{termNote}</p>
+      )}
       {lastRejected && (
         <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
           <XCircle className="h-5 w-5 shrink-0 text-destructive" />
@@ -141,6 +195,7 @@ export function SaasUpiCheckout(p: Props) {
       )}
 
       {/* Plan length + discount code */}
+      {!upgradeMode && (
       <div className="space-y-4 rounded-2xl border border-border p-5">
         <div className="space-y-2">
           <p className="text-sm font-semibold">{t("ln.sub.term")}</p>
@@ -178,8 +233,9 @@ export function SaasUpiCheckout(p: Props) {
           )}
         </div>
       </div>
+      )}
 
-      {quoteQ.isError || !q || amountPaise <= 0 ? (
+      {(upgradeMode ? optsQ.isError : quoteQ.isError || !q) || amountPaise <= 0 ? (
         <div role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm">
           {t("ln.upi.fail")}
           <Button variant="outline" className="ml-2 min-h-11" onClick={() => void quoteQ.refetch()}>{t("ln.sub.retry")}</Button>
@@ -196,6 +252,15 @@ export function SaasUpiCheckout(p: Props) {
             <QRCodeSVG value={upiLink} size={208} level="M" marginSize={2} aria-label={`UPI QR to pay ${inr(amountPaise)}`} className="h-52 w-52" />
           </div>
           <p className={`text-3xl font-bold tabular-nums ${quoteQ.isFetching ? "opacity-50" : ""}`}>{inr(amountPaise)}</p>
+          {upgradeMode && opts ? (
+          <dl className="w-full max-w-xs space-y-1 text-sm">
+            <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{t("ln.chg.diff", { flats: opts.upgrade.flat_count, diff: opts.upgrade.price_diff_per_flat_inr, days: opts.upgrade.days_left })}</dt><dd className="tabular-nums">{inr(opts.upgrade.base_amount_paise ?? 0)}</dd></div>
+            {(opts.upgrade.tax_amount_paise ?? 0) > 0 && (
+              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{t("ln.upi.gst")}{opts.upgrade.tax_percent ? ` (${opts.upgrade.tax_percent}%)` : ""}</dt><dd className="tabular-nums">{inr(opts.upgrade.tax_amount_paise!)}</dd></div>
+            )}
+            <div className="flex justify-between gap-3 border-t border-border pt-1 font-semibold"><dt>{t("ln.upi.total")}</dt><dd className="tabular-nums">{inr(amountPaise)}</dd></div>
+          </dl>
+          ) : q ? (
           <dl className="w-full max-w-xs space-y-1 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{t("ln.upi.plan", { plan: p.planName })} · {t("ln.sub.months", { n: q.term_months })}</dt><dd className="tabular-nums">{inr(q.gross_amount_paise ?? q.base_amount_paise ?? 0)}</dd></div>
             {q.term_discount_paise > 0 && (
@@ -209,6 +274,7 @@ export function SaasUpiCheckout(p: Props) {
             )}
             <div className="flex justify-between gap-3 border-t border-border pt-1 font-semibold"><dt>{t("ln.upi.total")}</dt><dd className="tabular-nums">{inr(amountPaise)}</dd></div>
           </dl>
+          ) : null}
           <button
             type="button"
             onClick={() => { void navigator.clipboard?.writeText(p.upiVpa); toast.success(t("ln.upi.copied")); }}

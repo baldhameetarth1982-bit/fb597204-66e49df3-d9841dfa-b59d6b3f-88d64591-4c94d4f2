@@ -12,13 +12,11 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GoogleButton } from "@/components/auth/GoogleButton";
-import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 import { ReverseOtpSignIn } from "@/components/auth/ReverseOtpSignIn";
 import { TruecallerButton } from "@/components/auth/TruecallerButton";
 import {
   getCapabilities,
   signInWithGoogleFirebase,
-  signInWithVerifiedPhone,
   startTruecallerAuth,
 } from "@/lib/auth-service";
 import { sanitizeNextPath } from "@/lib/safe-next";
@@ -64,7 +62,6 @@ function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState<null | "email" | "google" | "truecaller">(null);
   const [limited, setLimited] = useState<string | null>(null);
-  const [phoneMethod, setPhoneMethod] = useState<"reverse" | "code">("reverse");
   const caps = useMemo(() => getCapabilities(), []);
   const assertAllowed = useServerFn(assertLoginAllowed);
   const signInFn = useServerFn(emailSignIn);

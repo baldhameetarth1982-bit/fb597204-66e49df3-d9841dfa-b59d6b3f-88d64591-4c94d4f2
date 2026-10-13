@@ -66,6 +66,7 @@ function fmtDate(v: string | null) {
 
 function SubscriptionPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const { societyId, loading: sidLoading } = useSocietyId();
   const { plan: effectivePlan, isLoading: planLoading } = useFeatureAccess();
   const { profile, user } = useAuth();
@@ -251,7 +252,7 @@ function SubscriptionPage() {
       </SettingsSection>
 
       {societyId && <FlatEntitlementSection societyId={societyId} />}
-      {societyId && <CustomPlanSection societyId={societyId} threshold={plans.data?.[0]?.threshold ?? 300} focusRequestId={Route.useSearch().request} />}
+      {societyId && <CustomPlanSection societyId={societyId} threshold={plans.data?.[0]?.threshold ?? 300} focusRequestId={search.request} />}
 
 
       {showPlans && (

@@ -1,3 +1,4 @@
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useTranslation } from "react-i18next";
 import { usePlatformRoles, staffHome } from "@/hooks/usePlatformRoles";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
@@ -547,6 +548,7 @@ function AppearanceCard({
   const { hasRole } = useAuth() as any;
   const canManagePlan = isSuperAdmin || (hasRole?.("society_admin") ?? false);
   const [plan, setPlan] = useState<string | null>(null);
+  const { plan: effectivePlan } = useFeatureAccess();
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -561,7 +563,8 @@ function AppearanceCard({
   }, [societyId]);
 
   // The premium Mayur theme is included on the higher paid tiers (Pro, Premium, custom).
-  const isPremium = isSuperAdmin || plan === "premium" || plan === "pro" || plan === "master";
+  // Use the same plan resolution as every other gate (Growth never unlocks it; an expired plan never does).
+  const isPremium = effectivePlan === "premium";
   const isRoyal = currentTheme === "royal" || currentTheme === "neon";
 
   async function setTheme(next: "default" | "royal") {

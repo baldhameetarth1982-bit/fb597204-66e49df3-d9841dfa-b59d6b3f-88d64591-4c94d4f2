@@ -78,9 +78,20 @@ export function GuardsAdmin({ societyId }: { societyId: string }) {
                 <Button size="sm" variant="outline" className="min-h-11 text-destructive" onClick={() => setRevoke(g)}><ShieldOff className="h-4 w-4 mr-1" />{tu("common.signOut")}</Button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
+      <ShiftSheet open={!!shiftFor} busy={shiftBusy} initial={shiftFor ? shifts.data?.get(shiftFor.user_id) ?? null : null}
+        title={i18n.t("ln.sh.setTitle", { name: shiftFor?.full_name ?? tu("op.guard") }) as string}
+        onClose={() => setShiftFor(null)}
+        onSave={async (s) => {
+          if (!shiftFor) return;
+          setShiftBusy(true);
+          const ok = await saveGuardShift(shiftFor.user_id, s);
+          setShiftBusy(false);
+          if (ok) { setShiftFor(null); qc.invalidateQueries({ queryKey: ["guard-shifts"] }); }
+        }} />
       <ReasonSheet title={`Sign out ${revoke?.full_name ?? "guard"}`} hint={tu("op.ends_their_gate_access_on")} min={5}
         open={!!revoke} onOpenChange={(o) => !o && setRevoke(null)}
         onSubmit={async (reason) => {

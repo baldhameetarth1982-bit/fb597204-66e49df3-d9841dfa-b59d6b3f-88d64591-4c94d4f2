@@ -65,9 +65,9 @@ export function AdminSecuritySteps({ children }: { children: ReactNode }) {
   const needCodes = s.backupCodesLeft === 0 && !codes;
   const codesMaker = <Shell step={2}><BackupCodesMaker onCodes={(c) => { setCodes(c); void refresh(); }} /></Shell>;
 
-  // First-ever set is made during setup; a used-up set is replaced only after the
-  // authenticator step, because the server requires a fully verified session for that.
-  if (needCodes && !s.backupCodesEverMade) return codesMaker;
+  // With no unused codes left (first setup or all used up), the server allows a new set
+  // right after the fingerprint/face step, so the authenticator step is never blocked.
+  if (needCodes) return codesMaker;
 
   if (!totp.factorId) {
     return (

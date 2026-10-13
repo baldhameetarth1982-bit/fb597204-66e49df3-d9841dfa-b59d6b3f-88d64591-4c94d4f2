@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Building2, ImageIcon, LayoutTemplate, Loader2, Palette, PenLine, Type } from "lucide-react";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageShell }
-import { MobileHero } from "@/components/shared/MobileHero" from "@/components/shared/PageHeader";
+import { PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { SettingsSection, SaveBar } from "@/components/settings/SettingsUI";
 import { ListSkeleton, LoadError, InlineNotice } from "@/components/people/PeopleUI";

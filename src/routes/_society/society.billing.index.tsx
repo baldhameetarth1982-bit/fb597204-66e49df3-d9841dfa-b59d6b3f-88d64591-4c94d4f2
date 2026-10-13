@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
 import { PageShell }
-import { MobileHero } from "@/components/shared/MobileHero" from "@/components/shared/PageHeader";
+import { PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
 import { SummaryStrip, ListSkeleton, SearchField, SegmentedFilter, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { Button } from "@/components/ui/button";

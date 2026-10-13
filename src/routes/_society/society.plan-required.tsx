@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, ArrowRight, ShieldCheck, Rocket, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, ShieldCheck, Rocket, Loader2, PartyPopper, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
@@ -35,7 +35,7 @@ function PlanRequired() {
     staleTime: 0,
     queryFn: async () => {
       const [{ data: row }, { data: access }] = await Promise.all([
-        supabase.from("societies").select("id,name,plan_status,trial_ends_at,plan_id").eq("id", societyId!).maybeSingle(),
+        supabase.from("societies").select("id,name,plan_status,trial_ends_at,plan_expires_at,plan_id").eq("id", societyId!).maybeSingle(),
         supabase.rpc("society_has_access", { _society_id: societyId! }),
       ]);
       return { ...(row ?? {}), has_access: Boolean(access) } as any;
@@ -112,20 +112,33 @@ function PlanRequired() {
   return (
     <main className="min-h-dvh bg-background text-foreground">
       <div className="mx-auto max-w-5xl space-y-8 px-4 py-10 md:px-6 md:py-14">
-        <header className="grid gap-4 border-b border-border pb-6 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-warning/15 text-warning">
-            <Rocket className="h-6 w-6" />
-          </div>
-          <div className="min-w-0 space-y-1.5">
-            <Badge variant="outline" className="rounded-full">{tu("op.plan_renewal_needed")}</Badge>
-            <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">
-              {tu("op.renew")} {society?.name ?? tu("op.your_society")}{tu("op.s_plan_to_continue")}
-            </h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              {tu("op.features_are_paused_for_committee")}
-            </p>
-          </div>
-        </header>
+        {(() => {
+          const neverPaid = !!society && !society.plan_expires_at && (!society.plan_status || society.plan_status === "none" || society.plan_status === "trialing");
+          const trialEnded = neverPaid && !!society?.trial_ends_at && new Date(society.trial_ends_at) < new Date();
+          const name = society?.name ?? "your society";
+          return (
+            <header className="grid gap-4 border-b border-border pb-6 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
+              <div className={`grid h-12 w-12 place-items-center rounded-2xl ${neverPaid ? "bg-primary/10 text-primary" : "bg-warning/15 text-warning"}`}>
+                {neverPaid ? <PartyPopper className="h-6 w-6" /> : <Rocket className="h-6 w-6" />}
+              </div>
+              <div className="min-w-0 space-y-1.5">
+                <Badge variant="outline" className="rounded-full">
+                  {!neverPaid ? tu("op.plan_renewal_needed") : trialEnded ? "Free trial finished" : "One last step"}
+                </Badge>
+                <h1 className="text-2xl font-semibold tracking-tight md:text-[28px] md:leading-[34px]">
+                  {!neverPaid ? <>{tu("op.renew")} {name}{tu("op.s_plan_to_continue")}</> : trialEnded ? `Keep ${name} running` : `${name} is set up. Go live today`}
+                </h1>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  {!neverPaid
+                    ? tu("op.features_are_paused_for_committee")
+                    : trialEnded
+                      ? "Your free trial has ended. Pick a plan to keep billing, notices and the help desk working. Everything you set up is saved."
+                      : "Your flats, blocks and team are saved. Pick a plan and pay once to open SociyoHub for your committee and residents. It switches on as soon as the payment is confirmed."}
+                </p>
+              </div>
+            </header>
+          );
+        })()}
 
         <section aria-label={tu("op.choose_a_plan")} className="space-y-3">
           <h2 className="text-sm font-semibold">{tu("op.choose_a_plan")}</h2>
@@ -144,13 +157,13 @@ function PlanRequired() {
                     <span className="text-sm text-muted-foreground">/ flat / month</span>
                   </p>
                   <Button
-                    onClick={() => handleBuy(p)}
-                    disabled={busyId !== null}
+                    asChild
                     variant={p.is_recommended ? "default" : "outline"}
                     className="mt-5 min-h-12 rounded-xl"
                   >
-                    {busyId === p.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {tu("op.renew_with")} {p.name} <ArrowRight className="ml-1 h-4 w-4" />
+                    <Link to="/checkout/$planId" params={{ planId: p.id }}>
+                      {(!society?.plan_expires_at ? "Choose " : `${tu("op.renew_with")} `) + p.name} <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
                   </Button>
                 </Card>
               ))}
@@ -159,7 +172,7 @@ function PlanRequired() {
         </section>
 
         <footer className="flex flex-col gap-3 border-t border-border pt-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0" /> {tu("op.paid_securely_via_razorpay_checking")}</p>
+          <p className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0" /><QrCode className="h-4 w-4 shrink-0" /> Pay securely by UPI (any UPI app) or Razorpay. Access opens once the payment is confirmed.</p>
           <Button variant="ghost" onClick={() => signOut()} className="min-h-11 self-start sm:self-auto">{tu("common.signOut")}</Button>
         </footer>
       </div>

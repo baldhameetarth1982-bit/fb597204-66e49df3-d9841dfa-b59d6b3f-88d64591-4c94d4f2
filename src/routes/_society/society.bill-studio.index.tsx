@@ -4,7 +4,6 @@ import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Building2, ImageIcon, LayoutTemplate, Loader2, Palette, PenLine, Type } from "lucide-react";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageShell }
 import { PageShell } from "@/components/shared/PageHeader";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";

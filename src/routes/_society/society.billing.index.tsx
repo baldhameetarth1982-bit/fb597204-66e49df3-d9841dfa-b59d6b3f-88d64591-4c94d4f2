@@ -5,7 +5,6 @@ import { Receipt, Plus, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageShell }
 import { PageShell } from "@/components/shared/PageHeader";
 import { MobileHero } from "@/components/shared/MobileHero";
 import { SummaryStrip, ListSkeleton, SearchField, SegmentedFilter, LoadError, ListEmpty } from "@/components/people/PeopleUI";

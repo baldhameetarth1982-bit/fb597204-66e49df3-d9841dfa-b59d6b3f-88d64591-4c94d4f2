@@ -142,7 +142,7 @@ function JoinFlow() {
       toast.success(tu("nd.submitted"));
       navigate({ to: "/onboarding/pending" });
     } catch (e: any) {
-      toast.error(userMessage(e, "Could not submit"));
+      toast.error(guardShiftError(e) ?? userMessage(e, "Could not submit"));
     } finally {
       setSubmitting(false);
     }

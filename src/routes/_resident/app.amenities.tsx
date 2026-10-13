@@ -1,6 +1,7 @@
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useDraftState } from "@/hooks/useDraftState";
 import { CalendarDays, Clock3, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,8 +40,8 @@ function AmenitiesPage() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<Amenity | null>(null);
-  const [startsAt, setStartsAt] = useState("");
-  const [attendees, setAttendees] = useState(1);
+  const [startsAt, setStartsAt, clearStartsDraft] = useDraftState("amenity-start", "");
+  const [attendees, setAttendees, clearAttendeesDraft] = useDraftState("amenity-attendees", 1);
   const [saving, setSaving] = useState(false);
   const [requestKey, setRequestKey] = useState(() => crypto.randomUUID());
 
@@ -73,7 +74,7 @@ function AmenitiesPage() {
     if (error) return toast.error(amenityError(error));
     const status = data?.[0]?.status;
     toast.success(status === "waitlisted" ? t("am.t.waitlisted") : t("am.t.confirmed"));
-    setSelected(null); setStartsAt(""); setAttendees(1); setRequestKey(crypto.randomUUID()); void load();
+    setSelected(null); setStartsAt(""); setAttendees(1); clearStartsDraft(); clearAttendeesDraft(); setRequestKey(crypto.randomUUID()); void load();
   }
 
   async function cancel(id: string) {

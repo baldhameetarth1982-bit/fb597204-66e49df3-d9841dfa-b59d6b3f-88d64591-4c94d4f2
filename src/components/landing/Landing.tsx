@@ -156,12 +156,12 @@ export function Landing() {
 
       {/* CTA */}
       <section className="container-page pb-16 md:pb-24">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-foreground px-6 py-10 text-background md:flex-row md:items-center md:px-10">
+        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-primary px-6 py-10 text-primary-foreground md:flex-row md:items-center md:px-10">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">{tu("op.ready_to_simplify_your_society")}</h2>
+            <h2 className="[color:inherit] text-2xl font-semibold tracking-tight">{tu("op.ready_to_simplify_your_society")}</h2>
             <p className="mt-2 text-sm opacity-75">{tu("op.sign_in_or_create_your")}</p>
           </div>
-          <Button size="lg" className="h-12 px-6 text-base" onClick={start}>
+          <Button size="lg" variant="secondary" className="h-12 px-6 text-base" onClick={start}>
             {tu("op.get_started")} <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
           </Button>
         </div>

@@ -5,7 +5,8 @@ import { Receipt, Plus, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
 import { SummaryStrip, ListSkeleton, SearchField, SegmentedFilter, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { Button } from "@/components/ui/button";
@@ -143,15 +144,17 @@ function BillingPage() {
   }
 
   return (
+    <>
+    <MobileHero
+      title={tu("op.bill_history")}
+      subtitle={tu("op.every_generated_bill_for_every")}
+      icon={Receipt}
+      action={<div className="flex flex-col gap-2 sm:flex-row">
+        <Button asChild variant="secondary" className="min-h-11 rounded-xl"><Link to="/society/billing/single"><Plus className="h-4 w-4 mr-1" />{tu("ln.sb.title")}</Link></Button>
+        <Button asChild variant="secondary" className="min-h-11 rounded-xl"><Link to="/society/billing/generate"><Plus className="h-4 w-4 mr-1" />{tu("op.generate_bills")}</Link></Button>
+      </div>}
+    />
     <PageShell>
-      <PageHeader
-        title={tu("op.bill_history")}
-        description={tu("op.every_generated_bill_for_every")}
-        actions={<div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" className="min-h-11 rounded-xl"><Link to="/society/billing/single"><Plus className="h-4 w-4 mr-1" />{tu("ln.sb.title")}</Link></Button>
-          <Button asChild className="min-h-11 rounded-xl"><Link to="/society/billing/generate"><Plus className="h-4 w-4 mr-1" />{tu("op.generate_bills")}</Link></Button>
-        </div>}
-      />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
       <SummaryStrip items={[
@@ -210,5 +213,6 @@ function BillingPage() {
         </>
       )}
     </PageShell>
+    </>
   );
 }

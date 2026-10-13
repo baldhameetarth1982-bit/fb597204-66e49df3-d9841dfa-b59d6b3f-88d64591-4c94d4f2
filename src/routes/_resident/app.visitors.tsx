@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { localeTag } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useDraftState } from "@/hooks/useDraftState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Share2, Copy, Check, X, UsersRound } from "lucide-react";
 import { toast } from "sonner";
@@ -50,7 +51,7 @@ function MyVisitors() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm, clearFormDraft] = useDraftState(user ? `visitor-pass:${user.id}` : null, EMPTY);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [issued, setIssued] = useState<{ code: string; name: string } | null>(null);
@@ -96,6 +97,7 @@ function MyVisitors() {
     if (r?.gate_pass_code) setIssued({ code: r.gate_pass_code, name: form.name });
     else toast.success(t("vs.sentForApproval"));
     setForm(EMPTY);
+    clearFormDraft();
     setOpen(false);
     refresh();
   }

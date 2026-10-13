@@ -1758,6 +1758,13 @@
       "when": 1791880629512,
       "tag": "0250_profile_birth_year_and_required_phone_age",
       "breakpoints": true
+    },
+    {
+      "idx": 251,
+      "version": "7",
+      "when": 1791881741107,
+      "tag": "0251_guard_join_requests_and_shift_hours",
+      "breakpoints": true
     }
   ]
 }

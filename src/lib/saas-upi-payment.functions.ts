@@ -17,6 +17,7 @@ const KNOWN = [
   "not_authorized", "upi_unavailable", "invalid_paid_at", "already_pending", "duplicate_reference",
   "custom_pricing", "nothing_due", "price_changed", "idempotency_conflict", "invalid_file", "rate_limited",
   "reason_required", "not_found", "quantity_below_current_flats", "code_invalid", "code_exists", "code_in_use",
+  "plan_change_already_scheduled", "upgrade_unavailable",
 ];
 function safeError(e: unknown): Error {
   const msg = (e as { message?: string } | null)?.message ?? "";
@@ -59,6 +60,7 @@ export const submitSaasUpiPayment = createServerFn({ method: "POST" })
     z.object({
       societyId: z.string().uuid(),
       planId: z.enum(["basic", "pro", "premium"]),
+      mode: z.enum(["term", "upgrade"]).default("term"),
       flatQuantity: z.number().int().min(1).max(300).optional(),
       termMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]).default(1),
       discountCode: z.string().trim().max(24).regex(/^[A-Za-z0-9_-]*$/).default(""),
@@ -88,13 +90,20 @@ export const submitSaasUpiPayment = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const up = await supabaseAdmin.storage.from(BUCKET).upload(path, bytes, { contentType: kind.mime, upsert: false });
     if (up.error) throw new Error("operation_failed");
-    const { data: res, error } = await context.supabase.rpc("submit_saas_upi_payment_v2", {
-      _society_id: data.societyId, _plan_id: data.planId, _flat_quantity: (data.flatQuantity ?? null) as number,
-      _term_months: data.termMonths, _discount_code: data.discountCode,
-      _request_id: data.requestId, _expected_amount_paise: data.expectedAmountPaise, _utr: data.utr,
-      _payer_name: data.payerName, _payer_upi: data.payerUpi || (null as unknown as string),
-      _paid_at: data.paidAt, _proof_path: path, _consent_version: UPI_CONSENT_VERSION,
-    });
+    const { data: res, error } = data.mode === "upgrade"
+      ? await context.supabase.rpc("submit_saas_upi_upgrade", {
+          _society_id: data.societyId, _plan_id: data.planId,
+          _request_id: data.requestId, _expected_amount_paise: data.expectedAmountPaise, _utr: data.utr,
+          _payer_name: data.payerName, _payer_upi: data.payerUpi || (null as unknown as string),
+          _paid_at: data.paidAt, _proof_path: path, _consent_version: UPI_CONSENT_VERSION,
+        })
+      : await context.supabase.rpc("submit_saas_upi_payment_v2", {
+          _society_id: data.societyId, _plan_id: data.planId, _flat_quantity: (data.flatQuantity ?? null) as number,
+          _term_months: data.termMonths, _discount_code: data.discountCode,
+          _request_id: data.requestId, _expected_amount_paise: data.expectedAmountPaise, _utr: data.utr,
+          _payer_name: data.payerName, _payer_upi: data.payerUpi || (null as unknown as string),
+          _paid_at: data.paidAt, _proof_path: path, _consent_version: UPI_CONSENT_VERSION,
+        });
     const r = res as { id?: string; status?: string; replayed?: boolean } | null;
     if (error || r?.replayed) await supabaseAdmin.storage.from(BUCKET).remove([path]);
     if (error) throw safeError(error);
@@ -129,6 +138,32 @@ export const getSaasUpiQuote = createServerFn({ method: "POST" })
     });
     if (error) throw safeError(error);
     return q as unknown as UpiQuote;
+  });
+
+export type PlanChangeOptions = {
+  current_plan_id: "basic" | "pro" | "premium" | null; plan_status: string | null;
+  plan_expires_at: string | null; trial_ends_at: string | null;
+  scheduled_plan_id: string | null; scheduled_plan_starts_at: string | null;
+  term: { effect: "start_now" | "extend" | "schedule" | "after_trial" | "blocked"; starts_at?: string; reason?: string };
+  upgrade: {
+    available: boolean; reason?: string; from_plan_id?: string; days_left?: number; flat_count?: number;
+    price_diff_per_flat_inr?: number; until?: string; base_amount_paise?: number; tax_percent?: number;
+    tax_amount_paise?: number; amount_paise?: number;
+  };
+};
+
+/** Server-decided: does buying this plan start now, extend, start next period, or allow a remaining-days upgrade? */
+export const getSaasPlanChangeOptions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ societyId: z.string().uuid(), planId: z.enum(["basic", "pro", "premium"]) }).strict().parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: r, error } = await context.supabase.rpc("saas_plan_change_options", {
+      _society_id: data.societyId, _plan_id: data.planId,
+    });
+    if (error) throw safeError(error);
+    return r as unknown as PlanChangeOptions;
   });
 
 export type DiscountCode = {

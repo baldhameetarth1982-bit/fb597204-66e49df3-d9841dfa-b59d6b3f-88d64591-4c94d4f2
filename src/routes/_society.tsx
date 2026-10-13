@@ -40,7 +40,7 @@ function SocietyGuard() {
     return <Navigate to={primaryRole ? ROLE_HOME[primaryRole] : "/login"} replace />;
   }
   if (!societyId) return <Navigate to="/onboarding" search={{ ref: undefined }} replace />;
-  if (!isSuper && societyId && access === false && !pathname.endsWith("/plan-required")) {
+  if (!isSuper && societyId && access === false && pathname.startsWith("/society") && !pathname.endsWith("/plan-required")) {
     return <Navigate to="/society/plan-required" replace />;
   }
   return <Outlet />;

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Bell, LogOut, Settings, User } from "lucide-react";
+import { Bell, Home, LogOut, Settings, User, Building2 } from "lucide-react";
+import { tu } from "@/lib/i18n";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -52,12 +53,17 @@ export function AppHeader({
 } = {}) {
   const { user, profile, signOut, hasRole } = useAuth() as any;
   const navigate = useNavigate();
-  const isSocietyAdmin = typeof hasRole === "function" && (hasRole("society_admin") || hasRole("super_admin"));
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const isCommittee = typeof hasRole === "function" && (hasRole("society_admin") || hasRole("block_admin")) && !hasRole("super_admin");
+  const inResidentView = pathname.startsWith("/app") && !pathname.startsWith("/app/guard");
+  const isSocietyAdmin = typeof hasRole === "function" && (hasRole("society_admin") || hasRole("super_admin")) && !(isCommittee && inResidentView);
   const notificationsHref = isSocietyAdmin ? "/society/announcements" : "/app/notifications";
   const profileHref = isSocietyAdmin ? "/settings" : "/app/profile";
   const settingsHref = "/settings";
-
-  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const viewSwitch = !isCommittee ? null
+    : inResidentView ? { to: "/society/dashboard", label: tu("ln.view.committee"), Icon: Building2 }
+    : pathname.startsWith("/society") ? { to: "/app/dashboard", label: tu("ln.view.resident"), Icon: Home }
+    : null;
   const { t } = useTranslation();
   const section = sectionTitle(pathname, t);
 
@@ -85,6 +91,14 @@ export function AppHeader({
         )}
 
         <div className="ms-auto flex items-center gap-1 md:gap-2">
+          {viewSwitch && (
+            <Button asChild variant="outline" size="sm" className="h-10 rounded-full px-3 gap-1.5">
+              <Link to={viewSwitch.to as any} aria-label={viewSwitch.label}>
+                <viewSwitch.Icon className="h-4 w-4" aria-hidden />
+                <span className="max-[380px]:sr-only">{viewSwitch.label}</span>
+              </Link>
+            </Button>
+          )}
           <ThemeToggle />
 
           <Button

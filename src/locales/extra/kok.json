@@ -5634,5 +5634,7 @@
   "ln.acc.adultNote": "तुमी 18 वा ताच्या परस व्हड आसलेच जाय.",
   "ln.acc.under18": "SociyoHub वापरपाक तुमी 18 वा ताच्या परस व्हड आसलेच जाय.",
   "ln.acc.saveFail": "साठोवंक शकलो ना. कृपया परत प्रयत्न करा.",
-  "ln.acc.continue": "फुडें वच"
+  "ln.acc.continue": "फुडें वच",
+  "ln.view.resident": "रहिवासी दृष्य",
+  "ln.view.committee": "समिती दृष्य"
 }

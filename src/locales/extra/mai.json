@@ -5634,5 +5634,7 @@
   "ln.acc.adultNote": "अहाँक आयु 18 वर्ष वा ओहि सं बेसी होमय चाही।",
   "ln.acc.under18": "SociyoHub के उपयोग करबाक लेल अहाँक आयु 18 वर्ष वा ओहि सं बेसी होमय चाही।",
   "ln.acc.saveFail": "सेव नहि भऽ सकल। कृपया फेर सं प्रयास करू।",
-  "ln.acc.continue": "जारी राखू"
+  "ln.acc.continue": "जारी राखू",
+  "ln.view.resident": "आवासीय दृश्य",
+  "ln.view.committee": "समिति दृश्य"
 }

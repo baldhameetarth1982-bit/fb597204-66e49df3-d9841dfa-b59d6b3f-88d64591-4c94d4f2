@@ -5634,5 +5634,7 @@
   "ln.acc.adultNote": "আপনার বয়স 18 বা তার বেশি হতে হবে।",
   "ln.acc.under18": "SociyoHub ব্যবহার করার জন্য আপনার বয়স 18 বা তার বেশি হতে হবে।",
   "ln.acc.saveFail": "সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
-  "ln.acc.continue": "চালিয়ে যান"
+  "ln.acc.continue": "চালিয়ে যান",
+  "ln.view.resident": "আবাসিকদের ভিউ",
+  "ln.view.committee": "কমিটির ভিউ"
 }

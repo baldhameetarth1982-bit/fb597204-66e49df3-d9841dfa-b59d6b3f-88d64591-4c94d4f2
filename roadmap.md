@@ -63,7 +63,7 @@ Stage 3C/3D runtime verification paused by owner.
 - [x] Plan-ending banner 5/4/3/2 days, 24-hour countdown on last day (dashboard)
 - [x] New societies: 30-day Pro trial, skip plan choice, go straight to setup (existing trials unchanged)
 - [x] Block duplicate society: same name + same address, or one phone creating a second society
-- [ ] Phone required for every role (resident, admin, block admin, guard); age chosen at sign-up
+- [x] Phone required for every role (resident, admin, block admin, guard); age chosen at sign-up
 - [ ] Society admin "Switch to resident" option
 - [ ] Post-login choice: Create society / Join as resident / Join as guard (by code, admin approves)
 - [ ] Guard shifts: admin sets weekdays + hours; guard panel blocked outside them by server time; SOS still works

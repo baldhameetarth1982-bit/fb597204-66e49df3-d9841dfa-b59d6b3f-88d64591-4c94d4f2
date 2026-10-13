@@ -11,7 +11,7 @@ import {
 } from "@/features/onboarding/wizard/societySetup";
 import { commitSocietyWizard, loadWizardDraft } from "@/lib/hierarchy.functions";
 import { createSocietyFull } from "@/lib/onboarding.functions";
-import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
+import { ReverseOtpSignIn } from "@/components/auth/ReverseOtpSignIn";
 import { tu } from "@/lib/i18n";
 
 export const Route = createFileRoute("/onboarding/create")({
@@ -115,10 +115,9 @@ function CreateSocietyWizardPage() {
             </p>
           </div>
           <div className="mt-6">
-            <PhoneOtpForm
+            <ReverseOtpSignIn
               linkToCurrentUser
-              submitLabel="Verify & continue"
-              onVerified={() => {
+              onSignedIn={() => {
                 toast.success(tu("op.phone_verified"));
                 window.location.reload();
               }}

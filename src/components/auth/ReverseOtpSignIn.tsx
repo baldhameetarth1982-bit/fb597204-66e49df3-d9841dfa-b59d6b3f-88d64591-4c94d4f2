@@ -9,18 +9,26 @@ import { toast } from "sonner";
 
 type Channel = { type: "sms" | "whatsapp"; number: string; code: string; intent: string };
 
-async function post(body: unknown) {
+async function post(body: unknown, link = false) {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (link) {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) headers.authorization = `Bearer ${data.session.access_token}`;
+  }
   const res = await fetch("/api/public/auth/reverse-otp", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
   const data = (await res.json().catch(() => ({}))) as any;
   return { ok: res.ok, data };
 }
 
-/** Phone sign-in where the person sends a code FROM their phone (Reverse OTP). */
-export function ReverseOtpSignIn({ onSignedIn }: { onSignedIn: () => void }) {
+/**
+ * Phone sign-in where the person sends a code FROM their phone (Reverse OTP).
+ * With `linkToCurrentUser`, a signed-in person proves their number instead of signing in.
+ */
+export function ReverseOtpSignIn({ onSignedIn, linkToCurrentUser = false }: { onSignedIn: () => void; linkToCurrentUser?: boolean }) {
   const { t } = useTranslation();
   const [phone, setPhone] = useState("+91");
   const [busy, setBusy] = useState(false);
@@ -53,8 +61,9 @@ export function ReverseOtpSignIn({ onSignedIn }: { onSignedIn: () => void }) {
   function poll(token: string, startedAt: number) {
     timer.current = window.setTimeout(async () => {
       if (Date.now() - startedAt > 15 * 60_000) { reset(t("reverseOtp.expired", "This attempt expired. Please start again.")); return; }
-      const r = await post({ action: "check", attemptToken: token }).catch(() => null);
+      const r = await post({ action: "check", attemptToken: token }, linkToCurrentUser).catch(() => null);
       const s = r?.data?.status;
+      if (linkToCurrentUser && s === "linked") { onSignedIn(); return; }
       if (s === "verified" && r?.data.token_hash) {
         const { error: vErr } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: r.data.token_hash });
         if (vErr) { reset(t("auth.toast.couldNotSignIn", "Could not sign in.")); return; }

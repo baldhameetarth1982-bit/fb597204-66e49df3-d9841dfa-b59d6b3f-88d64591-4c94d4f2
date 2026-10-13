@@ -175,9 +175,26 @@ export const Route = createFileRoute("/api/public/auth/reverse-otp")({
             await clearAccountFailures(subject);
           }
 
+          const { data: existing } = await db.from("phone_verifications").select("user_id").eq("phone", phone).maybeSingle();
+
+          // Signed-in person proving their number (required for every role): link it, don't sign in.
+          const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+          if (bearer) {
+            const { data: me } = await supabaseAdmin.auth.getUser(bearer);
+            const uid = me?.user?.id;
+            if (!uid) return json({ error: "Please sign in again." }, { status: 401 });
+            if (existing?.user_id && existing.user_id !== uid) {
+              return json({ error: "This number is already linked to another SociyoHub account." }, { status: 409 });
+            }
+            const { error: linkErr } = await db.from("phone_verifications")
+              .upsert({ user_id: uid, phone, verified_via: "reverse_otp", verified_at: new Date().toISOString() }, { onConflict: "user_id" });
+            if (linkErr) return json({ error: "Could not save your number. Please try again." }, { status: 503 });
+            await db.from("profiles").update({ phone }).eq("id", uid);
+            return json({ status: "linked" });
+          }
+
           const admin = supabaseAdmin.auth.admin;
           let email: string | null = null;
-          const { data: existing } = await db.from("phone_verifications").select("user_id").eq("phone", phone).maybeSingle();
           if (existing?.user_id) {
             const { data: u } = await admin.getUserById(existing.user_id);
             email = u?.user?.email ?? null;

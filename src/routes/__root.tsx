@@ -47,6 +47,7 @@ import {
 
 import appCss from "../styles.css?url";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AccountCompletionGate } from "@/components/auth/AccountCompletionGate";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/shared/AppSidebar";
 import { AdminSidebar } from "@/components/shared/AdminSidebar";
@@ -346,7 +347,9 @@ function ShellSwitcher() {
     return (
       <ProtectedRoute pathname={pathname}>
         <MaintenanceGate>
-          <ProtectedShell pathname={pathname} />
+          <AccountCompletionGate>
+            <ProtectedShell pathname={pathname} />
+          </AccountCompletionGate>
         </MaintenanceGate>
       </ProtectedRoute>
     );

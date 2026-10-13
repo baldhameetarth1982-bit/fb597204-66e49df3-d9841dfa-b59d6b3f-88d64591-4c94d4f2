@@ -62,9 +62,12 @@ export function AdminSecuritySteps({ children }: { children: ReactNode }) {
 
   if (!s.biometricDone) return <BiometricStep hasPasskey={s.passkeys > 0} onDone={refresh} />;
 
-  if (s.backupCodesLeft === 0 && !codes) {
-    return <Shell step={2}><BackupCodesMaker onCodes={(c) => { setCodes(c); void refresh(); }} /></Shell>;
-  }
+  const needCodes = s.backupCodesLeft === 0 && !codes;
+  const codesMaker = <Shell step={2}><BackupCodesMaker onCodes={(c) => { setCodes(c); void refresh(); }} /></Shell>;
+
+  // First-ever set is made during setup; a used-up set is replaced only after the
+  // authenticator step, because the server requires a fully verified session for that.
+  if (needCodes && !s.backupCodesEverMade) return codesMaker;
 
   if (!totp.factorId) {
     return (
@@ -77,6 +80,8 @@ export function AdminSecuritySteps({ children }: { children: ReactNode }) {
   }
 
   if (!s.aal2) return <TotpStep factorId={totp.factorId} onDone={refresh} />;
+
+  if (needCodes) return codesMaker;
 
   return <>{children}</>;
 }

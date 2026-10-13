@@ -75,15 +75,18 @@ export const getAdminStepStatus = createServerFn({ method: "POST" })
     await requireSuperAdminRole(ctx);
     const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
     const sid = sessionId(ctx);
-    const [{ count: passkeys }, { count: codes }, { data: step }] = await Promise.all([
+    const [{ count: passkeys }, { count: codes }, { count: allCodes }, { data: step }] = await Promise.all([
       admin.from("admin_passkeys" as any).select("id", { count: "exact", head: true }).eq("user_id", ctx.userId),
       admin.from("admin_backup_codes" as any).select("id", { count: "exact", head: true }).eq("user_id", ctx.userId).is("used_at", null),
+      admin.from("admin_backup_codes" as any).select("id", { count: "exact", head: true }).eq("user_id", ctx.userId),
       admin.from("admin_step_sessions" as any).select("verified_at").eq("user_id", ctx.userId).eq("session_id", sid).maybeSingle(),
     ]);
     const s = step as { verified_at: string } | null;
     return {
       passkeys: passkeys ?? 0,
       backupCodesLeft: codes ?? 0,
+      // Replacing a used-up set needs the authenticator step first (see createBackupCodes).
+      backupCodesEverMade: (allCodes ?? 0) > 0,
       biometricDone: !!s && Date.now() - new Date(s.verified_at).getTime() < 12 * 3600_000,
       aal2: ctx.claims["aal"] === "aal2",
     };

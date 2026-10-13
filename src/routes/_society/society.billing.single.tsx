@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, FilePlus2, IndianRupee, CalendarDays, Plus, Trash2, Building2, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { EmptyState, PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { EmptyState, PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,8 +159,9 @@ function SingleBillPage() {
   }
 
   return (
+    <>
+    <MobileHero title={tu("ln.sb.title")} subtitle={tu("ln.sb.desc")} icon={FilePlus2} />
     <PageShell>
-      <PageHeader title={tu("ln.sb.title")} description={tu("ln.sb.desc")} />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
       {sidLoading || loading ? (
@@ -292,5 +294,6 @@ function SingleBillPage() {
         </div>
       )}
     </PageShell>
+    </>
   );
 }

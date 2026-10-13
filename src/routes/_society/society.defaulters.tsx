@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { writeSafeWorkbook } from "@/lib/spreadsheet-safety";
 import { supabase } from "@/integrations/supabase/client";
 import { useSocietyId } from "@/hooks/useSocietyId";
-import { PageHeader, PageShell } from "@/components/shared/PageHeader";
+import { PageShell } from "@/components/shared/PageHeader";
+import { MobileHero } from "@/components/shared/MobileHero";
 import { SummaryStrip, ListSkeleton, SearchField, SegmentedFilter, LoadError, ListEmpty } from "@/components/people/PeopleUI";
 import { BillingCenterTabs } from "@/components/nav/BillingCenterTabs";
 import { StatusChip } from "@/components/system/StatusChip";
@@ -98,8 +99,9 @@ function DefaultersPage() {
   const longOverdue = homes.filter((h) => maxDays(h) > 90).length;
 
   return (
+    <>
+    <MobileHero title={tu("op.outstanding_dues")} subtitle={tu("op.which_homes_still_owe_money")} icon={AlertTriangle} />
     <PageShell>
-      <PageHeader title={tu("op.outstanding_dues")} description={tu("op.which_homes_still_owe_money")} />
       <div className="mb-5 rounded-2xl border border-border bg-card"><BillingCenterTabs /></div>
 
       <SummaryStrip items={[
@@ -175,5 +177,6 @@ function DefaultersPage() {
         </>
       )}
     </PageShell>
+    </>
   );
 }

@@ -80,6 +80,7 @@ function AdminDashboard() {
       <PageHeader title="Platform overview" description="How SociyoHub itself is doing. Society-level details live in Societies." actions={
         <div className="flex flex-wrap gap-2">
           <Link to="/admin/upi-payments" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">UPI payments to review</Link>
+          <Link to="/admin/ads" className="inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-medium hover:bg-muted">Banner ads</Link>
           <Link to="/admin/assistant" className="inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-medium hover:bg-muted">Ask the assistant</Link>
         </div>
       } />

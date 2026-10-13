@@ -24,6 +24,10 @@ export function userMessage(err: unknown, fallback?: string): string {
   // Known server rule codes get a plain, translated explanation.
   if (/flat_capacity_reached/.test(text)) return i18n.t("ln.err.flatLimit");
   if (/duplicate_bill_for_period/.test(text)) return i18n.t("ln.err.dupBill");
+  if (/\bplan_required\b/.test(text))
+    return i18n.t("ln.err.planRequired", {
+      defaultValue: "This feature isn't included in your society's current plan.",
+    });
   if (text.length > 160 || TECHNICAL.test(text)) return fallback;
   return text;
 }

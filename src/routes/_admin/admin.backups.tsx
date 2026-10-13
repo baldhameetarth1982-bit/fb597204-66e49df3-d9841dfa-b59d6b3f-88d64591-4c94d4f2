@@ -86,7 +86,7 @@ function BackupsPage() {
         <p className="rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">{tu("ln.bk.note")}</p>
         {items.map((it) => (
           <Card key={it.kind}>
-            <CardContent className="flex items-center justify-between gap-3 p-4">
+            <CardContent className="flex items-center justify-between gap-3 p-4 sm:p-4">
               <div className="flex items-center gap-3">
                 <it.icon className="h-5 w-5 text-primary" aria-hidden />
                 <span className="font-medium">{tu(it.label)}</span>

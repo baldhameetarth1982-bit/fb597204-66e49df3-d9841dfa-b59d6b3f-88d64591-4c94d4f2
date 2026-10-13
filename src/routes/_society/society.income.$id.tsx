@@ -154,19 +154,19 @@ function IncomeDetail({ societyId }: { societyId: string }) {
 
       {q.isLoading ? (
         <Card>
-          <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground sm:p-4">
             <Loader2 className="h-4 w-4 animate-spin" /> {tu("op.loading_record")}
           </CardContent>
         </Card>
       ) : isServerError ? (
         <Card>
-          <CardContent className="p-4 flex items-center gap-2 text-sm text-destructive">
+          <CardContent className="p-4 flex items-center gap-2 text-sm text-destructive sm:p-4">
             <AlertCircle className="h-4 w-4" /> {tu("op.this_record_is_temporarily_unavailable")}
           </CardContent>
         </Card>
       ) : isNotFound ? (
         <Card>
-          <CardContent className="p-6 text-sm">
+          <CardContent className="p-6 text-sm sm:p-6">
             <div className="font-medium">{tu("op.record_not_found")}</div>
             <div className="text-muted-foreground mt-1">
               {tu("op.this_income_record_doesn_t")}

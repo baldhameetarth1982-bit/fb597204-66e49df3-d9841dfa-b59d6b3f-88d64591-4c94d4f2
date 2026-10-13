@@ -131,7 +131,7 @@ export function AssignFlatDialog({ open, onOpenChange, societyId, userId, userNa
                     onClick={() => setSelected(f.flat_id)}
                     className={`rounded-xl cursor-pointer transition ${active ? "border-primary ring-2 ring-primary/30" : ""}`}
                   >
-                    <CardContent className="p-3 flex items-center gap-3">
+                    <CardContent className="p-3 flex items-center gap-3 sm:p-3">
                       <div className="h-9 w-9 rounded-lg bg-primary/10 grid place-items-center">
                         <Home className="h-4 w-4 text-primary" />
                       </div>

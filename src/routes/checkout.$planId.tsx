@@ -131,7 +131,7 @@ function CheckoutPage() {
     return (
       <div className="min-h-dvh bg-background text-foreground flex items-center justify-center p-6">
         <Card className="max-w-md w-full rounded-2xl">
-          <CardContent className="p-6 text-center space-y-3">
+          <CardContent className="p-6 text-center space-y-3 sm:p-6">
             <ShieldAlert className="h-8 w-8 mx-auto text-muted-foreground" />
             <p className="font-semibold">Only your society's admins manage the subscription.</p>
             <Button asChild variant="secondary" className="h-11 rounded-xl"><Link to="/">Go back</Link></Button>

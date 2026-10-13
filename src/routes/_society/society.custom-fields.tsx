@@ -208,7 +208,7 @@ function CustomFieldsPage() {
           {fields.map((f, i) => (
             <li key={f.id}>
               <Card className="rounded-2xl">
-                <CardContent className="p-3 flex items-center gap-3">
+                <CardContent className="p-3 flex items-center gap-3 sm:p-3">
                   <div className="flex flex-col">
                     <button onClick={() => move(f.id, -1)} disabled={i === 0}
                       className="text-muted-foreground disabled:opacity-30 leading-none">▲</button>

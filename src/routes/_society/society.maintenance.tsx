@@ -223,7 +223,7 @@ function MaintenancePage() {
       {/* Monthly summary (calendar-style) */}
       {hasAnyData && (
         <Card className="rounded-2xl">
-          <CardContent className="p-4">
+          <CardContent className="p-4 sm:p-4">
             <div className="flex items-center gap-2 mb-3">
               <CalendarRange className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold">{t("mnt.collectionStatus", { year })}</h3>
@@ -268,7 +268,7 @@ function MaintenancePage() {
 
       {/* Quick actions */}
       <Card className="rounded-2xl">
-        <CardContent className="p-4">
+        <CardContent className="p-4 sm:p-4">
           <h3 className="text-sm font-semibold mb-3">{t("mnt.quick")}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Button asChild variant="outline" className="rounded-xl h-auto py-3 flex-col gap-1.5">

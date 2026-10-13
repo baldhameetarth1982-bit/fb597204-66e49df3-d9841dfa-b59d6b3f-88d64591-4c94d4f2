@@ -138,7 +138,7 @@ function WithdrawDialog({ available, onClose }: { available: number; onClose: (r
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="wd-title" className="fixed inset-0 z-50 grid place-items-center bg-foreground/30 px-4">
       <Card className="w-full max-w-sm rounded-3xl">
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-6 space-y-4 sm:p-6">
           <h2 id="wd-title" className="text-lg font-semibold">{t("prof.wd.title")}</h2>
           <p className="text-xs text-muted-foreground">{t("prof.wd.available", { amount: fmt.format(available) })}</p>
           <div className="grid grid-cols-2 gap-2">

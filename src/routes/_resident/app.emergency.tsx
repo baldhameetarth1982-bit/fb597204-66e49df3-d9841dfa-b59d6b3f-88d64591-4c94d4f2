@@ -83,7 +83,7 @@ function EmergencyPage() {
 
       {!online && (
         <Card className="rounded-2xl border-warning/40 bg-warning/10">
-          <CardContent className="p-3 flex items-center gap-2 text-xs">
+          <CardContent className="p-3 flex items-center gap-2 text-xs sm:p-3">
             <WifiOff className="h-4 w-4 text-warning" /> {t("re.offline")}
           </CardContent>
         </Card>
@@ -93,7 +93,7 @@ function EmergencyPage() {
       <SafetyAlertPanel online={online} />
 
       <Card className="rounded-3xl border-0 shadow-md bg-gradient-to-br from-destructive to-destructive/85 text-destructive-foreground">
-        <CardContent className="p-6">
+        <CardContent className="p-6 sm:p-6">
           <div className="flex items-center gap-2 mb-1 opacity-90">
             <ShieldAlert className="h-4 w-4" />
             <p className="text-xs uppercase tracking-wider">{t("re.inEmergency")}</p>
@@ -114,7 +114,7 @@ function EmergencyPage() {
         </h2>
         {contacts.map((c) => (
           <Card key={`${c.label}-${c.number}`} className="rounded-2xl">
-            <CardContent className="p-4 flex items-center gap-3">
+            <CardContent className="p-4 flex items-center gap-3 sm:p-4">
               <div className="h-10 w-10 rounded-xl grid place-items-center bg-destructive/10 text-destructive">
                 <Phone className="h-4 w-4" />
               </div>

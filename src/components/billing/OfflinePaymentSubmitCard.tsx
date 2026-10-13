@@ -147,7 +147,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
   if (loadingExisting) {
     return (
       <Card className="rounded-2xl">
-        <CardContent className="p-5 flex items-center gap-2 text-sm text-muted-foreground">
+        <CardContent className="p-5 flex items-center gap-2 text-sm text-muted-foreground sm:p-5">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>{tu("op.checking_your_payment_status")}</span>
         </CardContent>
@@ -158,7 +158,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
   if (rejected) {
     return (
       <Card className="rounded-2xl">
-        <CardContent className="p-5 space-y-3">
+        <CardContent className="p-5 space-y-3 sm:p-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <XCircle className="h-4 w-4 text-destructive" />
             <span>{tu("op.payment_not_accepted")}</span>
@@ -179,7 +179,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
   if (paymentId) {
     return (
       <Card className="rounded-2xl">
-        <CardContent className="p-5 space-y-2">
+        <CardContent className="p-5 space-y-2 sm:p-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             {receiptNumber && receiptStatus === "void" ? (
               <>
@@ -213,7 +213,7 @@ export function OfflinePaymentSubmitCard({ billId, billAmount, billStatus, cance
 
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-5 space-y-4">
+      <CardContent className="p-5 space-y-4 sm:p-5">
         <div>
           <p className="text-sm font-semibold">{tu("op.record_payment")}</p>
           <p className="text-xs text-muted-foreground">

@@ -197,7 +197,7 @@ function MatrixImportPage() {
       />
 
       <Card className="rounded-2xl">
-        <CardContent className="p-5 space-y-4">
+        <CardContent className="p-5 space-y-4 sm:p-5">
           <div className="flex flex-wrap items-center gap-2">
             <label className="text-xs text-muted-foreground">{tu("mnt.year")}</label>
             <Input

@@ -362,7 +362,7 @@ function SocietyDashboard() {
           </Link>
         </div>
         <Card className="rounded-xl">
-          <CardContent className="p-0">
+          <CardContent className="p-0 sm:p-0">
             {activity.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
                 {data ? t("sd.noActivity") : t("sd.loadingActivity")}
@@ -394,7 +394,7 @@ function SocietyDashboard() {
       {/* Empty-state onboarding nudge only when society is truly empty */}
       {data && data.totalFlats === 0 && (
         <Card className="rounded-xl mt-6 border-dashed">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-6 text-center sm:p-6">
             <Building2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="font-medium">{t("sd.ready")}</p>
             <p className="text-sm text-muted-foreground mt-1">

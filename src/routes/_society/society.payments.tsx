@@ -448,7 +448,7 @@ function RecordOfflinePaymentSection({
   if (!expanded) {
     return (
       <Card className="rounded-2xl">
-        <CardContent className="p-4 flex items-center justify-between">
+        <CardContent className="p-4 flex items-center justify-between sm:p-4">
           <div>
             <p className="text-sm font-semibold">{tu("op.record_offline_payment")}</p>
             <p className="text-xs text-muted-foreground">
@@ -465,7 +465,7 @@ function RecordOfflinePaymentSection({
 
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-4 space-y-3 sm:p-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">{tu("op.record_offline_payment")}</p>
           <Button

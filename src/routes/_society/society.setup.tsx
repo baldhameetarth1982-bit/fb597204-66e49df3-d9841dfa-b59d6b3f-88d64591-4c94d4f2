@@ -238,7 +238,7 @@ function SetupWizardPage() {
       </header>
 
       <Card className="rounded-3xl">
-        <CardContent className="p-5 space-y-4">
+        <CardContent className="p-5 space-y-4 sm:p-5">
           {step === 0 && (
             <>
               <h2 className="text-base font-semibold">{tu("op.society_information")}</h2>

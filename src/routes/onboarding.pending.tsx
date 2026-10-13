@@ -104,7 +104,7 @@ function PendingApproval() {
       </div>
 
       <Card className="rounded-2xl">
-        <CardContent className="p-5 flex items-start gap-3">
+        <CardContent className="p-5 flex items-start gap-3 sm:p-5">
           <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="text-sm">
             <p className="font-medium">{tu("op.requested_as")} <span className="capitalize">{req.relationship}</span></p>

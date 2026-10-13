@@ -238,7 +238,7 @@ function JoinFlow() {
             </p>
           </header>
           <Card className="rounded-2xl">
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-5 space-y-3 sm:p-5">
               <Label htmlFor="code" className="flex items-center gap-1.5">
                 <KeyRound className="h-4 w-4 text-primary" /> {tu("op.society_code")}
               </Label>
@@ -266,7 +266,7 @@ function JoinFlow() {
             <h1 className="text-2xl font-semibold tracking-tight">{tu("op.your_details")}</h1>
           </header>
           <Card className="rounded-2xl">
-            <CardContent className="p-5 space-y-4">
+            <CardContent className="p-5 space-y-4 sm:p-5">
               <div className="space-y-2">
                 <Label htmlFor="fullName">{tu("auth.fullName")}</Label>
                 <Input
@@ -385,7 +385,7 @@ function JoinFlow() {
             <p className="mt-1 text-sm text-muted-foreground">{tu("op.your_admin_will_review_this")}</p>
           </header>
           <Card className="rounded-2xl">
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-5 space-y-3 sm:p-5">
               <Row label={tu("nav.society")} value={society.name} />
               <Row label={tu("gd.houseLabel")} value={unitLabel} />
               <Row label={tu("common.name")} value={fullName} />

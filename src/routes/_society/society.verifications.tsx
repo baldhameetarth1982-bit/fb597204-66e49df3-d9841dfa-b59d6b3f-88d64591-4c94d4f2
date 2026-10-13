@@ -238,7 +238,7 @@ function VerificationCard({
 }) {
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-4">
+      <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-4 sm:p-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold truncate">{p.full_name ?? tu("prof.unnamed")}</p>

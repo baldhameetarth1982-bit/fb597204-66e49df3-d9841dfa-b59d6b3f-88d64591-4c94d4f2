@@ -206,7 +206,7 @@ function ApprovalsPage() {
         </div>
       ) : !rows || rows.length === 0 ? (
         <Card className="rounded-2xl">
-          <CardContent className="p-8 text-center text-muted-foreground">
+          <CardContent className="p-8 text-center text-muted-foreground sm:p-8">
             <Inbox className="h-10 w-10 mx-auto mb-3" />
             {tu("op.no_pending_requests_new_requests")}
           </CardContent>

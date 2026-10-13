@@ -713,7 +713,7 @@ function StepReview({ state }: StepProps<WizardState>) {
 
   return (
     <div className="space-y-3">
-      <Card className="rounded-2xl"><CardContent className="p-4 space-y-1.5 text-sm">
+      <Card className="rounded-2xl"><CardContent className="p-4 space-y-1.5 text-sm sm:p-4">
         <Row k="Society" v={state.info.name || "—"} />
         <Row k="Address" v={[state.info.address, state.info.city, state.info.state, state.info.pincode].filter(Boolean).join(", ") || "—"} />
         <Row k="Layout" v={state.layout === "structured" ? "Structured" : "Serial number"} />

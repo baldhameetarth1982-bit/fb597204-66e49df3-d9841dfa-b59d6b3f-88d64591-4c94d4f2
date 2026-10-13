@@ -105,7 +105,7 @@ function Section({ title, icon: Icon, list, onDelete, canEdit }: { title: string
       <div className="grid sm:grid-cols-2 gap-3">
         {list.map((c) => (
           <Card key={c.id} className="rounded-2xl">
-            <CardContent className="p-4 flex items-center gap-3">
+            <CardContent className="p-4 flex items-center gap-3 sm:p-4">
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-muted-foreground">{c.role_label}</p>
                 <p className="font-semibold truncate">{c.name}</p>

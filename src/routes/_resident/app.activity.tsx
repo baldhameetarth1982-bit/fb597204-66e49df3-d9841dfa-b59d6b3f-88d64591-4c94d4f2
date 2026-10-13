@@ -86,7 +86,7 @@ function ActivityScreen() {
           return (
             <Link key={tool.to} to={tool.to} className="block active:scale-[0.99] transition-transform">
               <Card className="rounded-2xl">
-                <CardContent className="p-4 flex items-center gap-4">
+                <CardContent className="p-4 flex items-center gap-4 sm:p-4">
                   <div className={`h-12 w-12 rounded-2xl grid place-items-center ${tool.accent}`}>
                     <Icon className="h-6 w-6" />
                   </div>
@@ -115,7 +115,7 @@ function ActivityScreen() {
           <Link to="/app/notifications" className="text-xs text-primary font-medium">{t("home.viewAll")}</Link>
         </div>
         <Card className="rounded-2xl">
-          <CardContent className="p-2">
+          <CardContent className="p-2 sm:p-2">
             {recentErr ? (
               <LoadError title={t("act.loadFailed")} onRetry={() => refetchRecent()} />
             ) : recent.length === 0 ? (

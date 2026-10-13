@@ -177,7 +177,7 @@ function ExplorerPage() {
           actions={<Button variant="ghost" onClick={() => navigate({ to: "/society/explorer", search: { block: flat.block_id, flat: undefined } })}><ArrowLeft className="h-4 w-4 mr-1" /> {tu("common.back")}</Button>}
         />
         <Card className="rounded-2xl">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-4 space-y-3 sm:p-4">
             <div className="flex items-center gap-3">
               <span className={cn("h-2.5 w-2.5 rounded-full", DOT[summary.status])} />
               <p className="font-medium capitalize">{summary.status}</p>
@@ -189,12 +189,12 @@ function ExplorerPage() {
         <section className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{tu("nav.residents")}</h3>
           {residents.length === 0 ? (
-            <Card className="rounded-2xl"><CardContent className="p-4 text-sm text-muted-foreground">{tu("op.no_residents_linked_yet_use")}</CardContent></Card>
+            <Card className="rounded-2xl"><CardContent className="p-4 text-sm text-muted-foreground sm:p-4">{tu("op.no_residents_linked_yet_use")}</CardContent></Card>
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
               {residents.map((r, i) => (
                 <Card key={i} className="rounded-2xl">
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 sm:p-4">
                     <p className="font-medium">{r.name}</p>
                     <p className="text-xs text-muted-foreground">{r.phone ?? "—"} · {r.email ?? "—"}</p>
                   </CardContent>
@@ -211,7 +211,7 @@ function ExplorerPage() {
 
         <section className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{tu("nav.bills")}</h3>
-          <Card className="rounded-2xl"><CardContent className="p-0">
+          <Card className="rounded-2xl"><CardContent className="p-0 sm:p-0">
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground"><tr><th className="text-left p-3">{tu("inc.period")}</th><th className="text-right p-3">{tu("common.amount")}</th><th className="text-right p-3">{tu("bills.paid")}</th><th className="text-left p-3">{tu("common.status")}</th></tr></thead>
               <tbody>
@@ -234,7 +234,7 @@ function ExplorerPage() {
 
         <section className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{tu("op.recent_payments")}</h3>
-          <Card className="rounded-2xl"><CardContent className="p-0">
+          <Card className="rounded-2xl"><CardContent className="p-0 sm:p-0">
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground"><tr><th className="text-left p-3">{tu("common.date")}</th><th className="text-left p-3">{tu("inc.method")}</th><th className="text-right p-3">{tu("common.amount")}</th></tr></thead>
               <tbody>
@@ -269,7 +269,7 @@ function ExplorerPage() {
             return (
               <Link key={f.id} to="/society/explorer" search={{ flat: f.id } as any}>
                 <Card className="rounded-2xl active:scale-[0.97] transition-transform">
-                  <CardContent className="p-3">
+                  <CardContent className="p-3 sm:p-3">
                     <div className="flex items-center gap-1.5">
                       <span className={cn("h-2 w-2 rounded-full", DOT[s.status])} />
                       <p className="font-semibold truncate">{f.flat_number}</p>
@@ -309,7 +309,7 @@ function ExplorerPage() {
             return (
               <Link key={b.id} to="/society/explorer" search={{ block: b.id } as any}>
                 <Card className="rounded-2xl active:scale-[0.97] transition-transform">
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 sm:p-4">
                     <Building2 className="h-5 w-5 text-primary mb-2" />
                     <p className="font-semibold">{b.name}</p>
                     <p className="text-xs text-muted-foreground">{k.total} {tu("op.units")}</p>
@@ -333,7 +333,7 @@ function ExplorerPage() {
 function KpiCard({ label, value, tone }: { label: string; value: string; tone?: "emerald" | "amber" | "rose" }) {
   const c = tone === "emerald" ? "text-emerald-600" : tone === "amber" ? "text-amber-600" : tone === "rose" ? "text-rose-600" : "text-foreground";
   return (
-    <Card className="rounded-2xl"><CardContent className="p-4">
+    <Card className="rounded-2xl"><CardContent className="p-4 sm:p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={cn("mt-1 text-2xl font-semibold", c)}>{value}</p>
     </CardContent></Card>

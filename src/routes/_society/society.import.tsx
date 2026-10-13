@@ -479,7 +479,7 @@ function ImportPage() {
 
         {/* Recent jobs — recovery UX */}
         <Card className="rounded-2xl">
-          <CardContent className="p-5 space-y-3">
+          <CardContent className="p-5 space-y-3 sm:p-5">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <History className="h-4 w-4" /> {tu("op.recent_import_jobs")}
               {busy === "jobs" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -540,7 +540,7 @@ function ImportPage() {
 
         {/* Step 1 — Source */}
         <Card className="rounded-2xl">
-          <CardContent className="p-5 space-y-3">
+          <CardContent className="p-5 space-y-3 sm:p-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="text-sm">
                 <div className="text-xs text-muted-foreground mb-1">{tu("op.source")}</div>
@@ -609,7 +609,7 @@ function ImportPage() {
         {/* Step 2 — Mapping */}
         {jobId && headers.length > 0 && (
           <Card className="rounded-2xl">
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-5 space-y-3 sm:p-5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold">{tu("op.column_mapping")}</p>
@@ -663,7 +663,7 @@ function ImportPage() {
         {/* Step 3 — Preview */}
         {totals && (
           <Card className="rounded-2xl">
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-5 space-y-3 sm:p-5">
               {dryRun && commitStatus !== "completed" && (
                 <div className="rounded-xl border bg-muted/40 p-3 text-xs">
                   <p className="font-semibold text-sm">{tu("op.dry_run_nothing_has_been")}</p>
@@ -754,7 +754,7 @@ function ImportPage() {
         {/* Confirm dialog card */}
         {confirmMode && (
           <Card className="rounded-2xl border-primary">
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-5 space-y-3 sm:p-5">
               <p className="font-semibold">{tu("op.confirm_canonical_import")}</p>
               <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
                 <li>{tu("op.society_records_will_be_created")}</li>
@@ -792,7 +792,7 @@ function ImportPage() {
         {/* Result screen */}
         {(commitStatus === "completed" || commitStatus === "idempotent_replay") && commitResult && (
           <Card className="rounded-2xl border-success">
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-5 space-y-3 sm:p-5">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <p className="font-semibold">{tu("op.import_committed")}</p>

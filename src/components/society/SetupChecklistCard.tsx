@@ -83,7 +83,7 @@ export function SetupChecklistCard({ societyId }: { societyId: string }) {
   if (isLoading) {
     return (
       <Card className="rounded-2xl">
-        <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
+        <CardContent className="p-4 flex items-center gap-2 text-sm text-muted-foreground sm:p-4">
           <Loader2 className="h-4 w-4 animate-spin" /> {tu("op.loading_setup_checklist")}
         </CardContent>
       </Card>
@@ -95,7 +95,7 @@ export function SetupChecklistCard({ societyId }: { societyId: string }) {
     // caller is denied (unavailable → thrown as MigrationError).
     return (
       <Card className="rounded-2xl border-warning/30 bg-warning/5">
-        <CardContent className="p-4 flex items-center gap-2 text-sm text-warning">
+        <CardContent className="p-4 flex items-center gap-2 text-sm text-warning sm:p-4">
           <AlertTriangle className="h-4 w-4" /> {t("setup.unavailable")}
         </CardContent>
       </Card>
@@ -116,7 +116,7 @@ export function SetupChecklistCard({ societyId }: { societyId: string }) {
 
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-4">
+      <CardContent className="p-4 sm:p-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary grid place-items-center">
             <ListChecks className="h-4 w-4" />

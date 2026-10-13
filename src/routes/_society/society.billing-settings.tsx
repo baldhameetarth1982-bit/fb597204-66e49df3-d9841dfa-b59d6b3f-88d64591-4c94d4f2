@@ -328,7 +328,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
   if (loading) {
     return (
       <Card className="rounded-2xl">
-        <CardContent className="p-6 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></CardContent>
+        <CardContent className="p-6 flex items-center justify-center sm:p-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></CardContent>
       </Card>
     );
   }
@@ -336,7 +336,7 @@ function AutoBillingSection({ societyId }: { societyId: string }) {
   if (loadFailed) {
     return (
       <Card className="rounded-2xl">
-        <CardContent className="p-2">
+        <CardContent className="p-2 sm:p-2">
           <ErrorState
             title={tu("op.couldn_t_load_auto_billing")}
             description={tu("op.nothing_has_been_changed_your_2")}

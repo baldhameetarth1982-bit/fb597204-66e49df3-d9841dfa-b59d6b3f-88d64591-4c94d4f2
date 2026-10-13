@@ -35,7 +35,7 @@ function BylawsScreen() {
         </div>
       </header>
       <Card className="rounded-2xl">
-        <CardContent className="p-5">
+        <CardContent className="p-5 sm:p-5">
           {loading ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> :
             text ? <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed">{text}</pre> :
               <p className="text-sm text-muted-foreground">{tu("op.the_admin_hasn_t_published")}</p>}

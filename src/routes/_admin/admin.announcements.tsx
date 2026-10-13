@@ -112,7 +112,7 @@ function AnnouncementsPage() {
       <PageHeader title={tu("ln.ann.nav")} description={tu("ln.ann.desc")} />
       <div className="mx-auto grid max-w-3xl gap-5">
         <Card>
-          <CardContent className="space-y-4 p-5">
+          <CardContent className="space-y-4 p-5 sm:p-5">
             <div>
               <Label htmlFor="ann-title">{tu("ln.ann.title")}</Label>
               <Input id="ann-title" className="mt-1" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -171,7 +171,7 @@ function AnnouncementsPage() {
             {list.data.map((a) => (
               <li key={a.id}>
                 <Card>
-                  <CardContent className="flex flex-wrap items-start justify-between gap-3 p-4">
+                  <CardContent className="flex flex-wrap items-start justify-between gap-3 p-4 sm:p-4">
                     <div className="min-w-0">
                       <p className="font-medium">{a.title}</p>
                       <p className="text-sm text-muted-foreground">{a.body}</p>

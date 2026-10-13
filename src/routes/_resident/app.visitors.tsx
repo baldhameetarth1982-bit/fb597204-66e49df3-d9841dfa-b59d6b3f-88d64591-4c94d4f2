@@ -132,7 +132,7 @@ function MyVisitors() {
         <section aria-label={t("vs.waiting")} className="space-y-2">
           {waiting.filter((v) => v.category !== "mover").map((v) => (
             <Card key={v.id} className="rounded-2xl border-warning/50 bg-warning/10">
-              <CardContent className="p-4 space-y-3">
+              <CardContent className="p-4 space-y-3 sm:p-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-warning-foreground">{t("vs.atGate")}</p>
                   <p className="font-semibold">{v.visitor_name}</p>
@@ -166,12 +166,12 @@ function MyVisitors() {
       {q.isLoading ? (
         <div className="space-y-2">{[0, 1].map((i) => <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />)}</div>
       ) : q.isError && rows.length === 0 ? (
-        <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3">
+        <Card className="rounded-2xl"><CardContent className="p-6 text-center space-y-3 sm:p-6">
           <p className="text-sm">{gateErrorMessage(q.error)}</p>
           <Button variant="outline" className="min-h-11 rounded-xl" onClick={() => q.refetch()}>{t("common.retry")}</Button>
         </CardContent></Card>
       ) : shown.length === 0 ? (
-        <Card className="rounded-2xl"><CardContent className="p-8 text-center">
+        <Card className="rounded-2xl"><CardContent className="p-8 text-center sm:p-8">
           <UsersRound className="h-8 w-8 mx-auto text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">{tab === "active" ? t("vs.noneUpcoming") : t("vs.nonePast")}</p>
         </CardContent></Card>
@@ -181,7 +181,7 @@ function MyVisitors() {
             const m = statusMeta(v.eff);
             const hasCode = (v.eff === "expected" || v.eff === "pending") && v.gate_pass_code;
             return (
-              <li key={v.id}><Card className="rounded-2xl"><CardContent className="p-4 space-y-2">
+              <li key={v.id}><Card className="rounded-2xl"><CardContent className="p-4 space-y-2 sm:p-4">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold truncate">{v.visitor_name}</p>
                   <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", m.className)}>{t(`vs.st.${v.eff === "pending" ? "expected" : v.eff === "rejected" ? "denied" : v.eff === "cancelled" ? "x" : v.eff}`, { defaultValue: v.eff === "cancelled" ? t("rbills.cancelled") : v.eff === "expired" ? t("cm.st.expired") : m.label })}</span>
